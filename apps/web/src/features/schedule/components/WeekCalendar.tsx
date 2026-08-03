@@ -10,13 +10,13 @@ export function WeekCalendar({
   weekStart,
   bookings,
   currentUserId,
-  onSlotClick,
+  onSlotSelect,
   onBookingClick,
 }: {
   weekStart: string;
   bookings: Booking[];
   currentUserId: string;
-  onSlotClick: (startAt: Date, endAt: Date) => void;
+  onSlotSelect: (startAt: Date, endAt: Date) => void;
   onBookingClick: (booking: Booking) => void;
 }) {
   const days = getWeekDays(weekStart);
@@ -44,7 +44,7 @@ export function WeekCalendar({
                     day,
                 )}
                 currentUserId={currentUserId}
-                onSlotClick={onSlotClick}
+                onSlotSelect={onSlotSelect}
                 onBookingClick={onBookingClick}
               />
             ))}
@@ -58,13 +58,15 @@ export function WeekCalendar({
         </span>
         <span>
           <i className="legend-dot legend-other" />
-          Інші бронювання
+          Інші бронювання · кольори відрізняють користувачів
         </span>
         <span>
           <i className="legend-dot legend-free" />
           Доступно для бронювання
         </span>
-        <span className="legend-hint">Натисніть на слот, щоб забронювати</span>
+        <span className="legend-hint">
+          Потягніть мишкою для вибору діапазону або натисніть слот
+        </span>
       </div>
     </section>
   );

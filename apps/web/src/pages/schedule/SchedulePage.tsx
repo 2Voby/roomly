@@ -124,7 +124,7 @@ export function SchedulePage() {
           weekStart={weekStart}
           bookings={bookings.data ?? []}
           currentUserId={user?.id ?? ''}
-          onSlotClick={(startAt, endAt) => {
+          onSlotSelect={(startAt, endAt) => {
             createBooking.reset();
             setSlot({ startAt, endAt });
           }}

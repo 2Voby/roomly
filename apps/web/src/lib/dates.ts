@@ -7,6 +7,19 @@ import { OFFICE_TIMEZONE } from './timezone';
 export const CALENDAR_START_MINUTES = 9 * 60;
 export const CALENDAR_END_MINUTES = 19 * 60;
 export const CALENDAR_SLOT_MINUTES = 30;
+export const BOOKING_MIN_DURATION_MINUTES = 30;
+export const BOOKING_MAX_DURATION_MINUTES = 4 * 60;
+
+export function getBookingDurationOptions(startAt: Date): number[] {
+  const local = toZonedTime(startAt, OFFICE_TIMEZONE);
+  const startMinutes = local.getHours() * 60 + local.getMinutes();
+  const maxDuration = Math.min(BOOKING_MAX_DURATION_MINUTES, CALENDAR_END_MINUTES - startMinutes);
+
+  return Array.from(
+    { length: Math.floor(maxDuration / CALENDAR_SLOT_MINUTES) },
+    (_, index) => (index + 1) * CALENDAR_SLOT_MINUTES,
+  );
+}
 
 export function getWeekStartKey(date = new Date()): string {
   const local = toZonedTime(date, OFFICE_TIMEZONE);
