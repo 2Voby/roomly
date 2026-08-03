@@ -1,29 +1,38 @@
 import type { Request, Response } from 'express';
 
 import { sendSuccess } from '../../shared/http/api-response.js';
+import { getValidated } from '../../shared/middleware/validate-request.js';
 import { BookingsService } from './bookings.service.js';
 import type { CreateBookingRequest, MyBookingsQuery } from './bookings.schemas.js';
 
 const bookingsService = new BookingsService();
 
 export async function createBooking(req: Request, res: Response): Promise<void> {
-  const booking = await bookingsService.create(
-    req.session.userId as string,
-    req.body as CreateBookingRequest,
-  );
+  const { body } = getValidated<{
+    body: CreateBookingRequest;
+    params: Record<string, unknown>;
+    query: Record<string, unknown>;
+  }>(res);
+  const booking = await bookingsService.create(req.session.userId as string, body);
   sendSuccess(res, booking);
 }
 
 export async function cancelBooking(req: Request, res: Response): Promise<void> {
-  const booking = await bookingsService.cancel(
-    req.session.userId as string,
-    String(req.params.bookingId),
-  );
+  const { params } = getValidated<{
+    body: unknown;
+    params: { bookingId: string };
+    query: Record<string, unknown>;
+  }>(res);
+  const booking = await bookingsService.cancel(req.session.userId as string, params.bookingId);
   sendSuccess(res, booking);
 }
 
 export async function listMyBookings(req: Request, res: Response): Promise<void> {
-  const query = req.query as unknown as MyBookingsQuery;
+  const { query } = getValidated<{
+    body: unknown;
+    params: Record<string, unknown>;
+    query: MyBookingsQuery;
+  }>(res);
   const result = await bookingsService.listMine(
     req.session.userId as string,
     query.type,

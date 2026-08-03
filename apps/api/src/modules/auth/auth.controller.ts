@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 
 import { asyncController } from '../../shared/http/async-controller.js';
 import { sendSuccess } from '../../shared/http/api-response.js';
+import { getValidated } from '../../shared/middleware/validate-request.js';
 import { AuthService } from './auth.service.js';
 import type { LoginInput, RegisterInput } from './auth.schemas.js';
 
@@ -20,14 +21,24 @@ function destroySession(req: Request): Promise<void> {
 }
 
 export async function register(req: Request, res: Response): Promise<void> {
-  const user = await authService.register(req.body as RegisterInput);
+  const { body } = getValidated<{
+    body: RegisterInput;
+    params: Record<string, unknown>;
+    query: Record<string, unknown>;
+  }>(res);
+  const user = await authService.register(body);
   await regenerateSession(req);
   req.session.userId = user.id;
   sendSuccess(res, user);
 }
 
 export async function login(req: Request, res: Response): Promise<void> {
-  const user = await authService.login(req.body as LoginInput);
+  const { body } = getValidated<{
+    body: LoginInput;
+    params: Record<string, unknown>;
+    query: Record<string, unknown>;
+  }>(res);
+  const user = await authService.login(body);
   await regenerateSession(req);
   req.session.userId = user.id;
   sendSuccess(res, user);

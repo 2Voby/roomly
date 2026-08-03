@@ -7,13 +7,33 @@ type RequestSchemas = {
   query?: ZodType;
 };
 
+export type ValidatedRequestData = {
+  body: unknown;
+  params: Record<string, unknown>;
+  query: Record<string, unknown>;
+};
+
+export function getValidated<T extends ValidatedRequestData>(res: {
+  locals: { validated?: ValidatedRequestData };
+}): T {
+  if (!res.locals.validated) throw new Error('Validated request data is not available');
+  return res.locals.validated as T;
+}
+
 export function validateRequest(schemas: RequestSchemas): RequestHandler {
-  return (req, _res, next) => {
+  return (req, res, next) => {
     try {
-      if (schemas.body) req.body = schemas.body.parse(req.body);
-      if (schemas.params)
-        req.params = schemas.params.parse(req.params) as unknown as typeof req.params;
-      if (schemas.query) req.query = schemas.query.parse(req.query) as unknown as typeof req.query;
+      res.locals.validated = {
+        body: schemas.body ? schemas.body.parse(req.body) : req.body,
+        params: (schemas.params ? schemas.params.parse(req.params) : req.params) as Record<
+          string,
+          unknown
+        >,
+        query: (schemas.query ? schemas.query.parse(req.query) : req.query) as Record<
+          string,
+          unknown
+        >,
+      };
       next();
     } catch (error) {
       next(error);
