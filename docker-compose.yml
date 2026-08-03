@@ -1,0 +1,57 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: roomly
+      POSTGRES_PASSWORD: roomly
+      POSTGRES_DB: roomly
+    volumes:
+      - roomly-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U roomly -d roomly']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      DATABASE_URL: postgresql://roomly:roomly@postgres:5432/roomly?schema=public
+      SESSION_SECRET: docker-development-secret-change-me-please-123456789
+      OFFICE_TIMEZONE: Europe/Kyiv
+      WEB_ORIGIN: http://localhost:3000
+      NOTIFY_BEFORE_MINUTES: 10
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command:
+      ['sh', '-c', 'npm run db:migrate && npm run db:seed && npm run start --workspace=apps/api']
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(''http://localhost:4000/api/health'').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_URL: ''
+        VITE_OFFICE_TIMEZONE: Europe/Kyiv
+    ports:
+      - '3000:80'
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  roomly-postgres:
