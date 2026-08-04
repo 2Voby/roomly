@@ -101,6 +101,17 @@ export class BookingsRepository {
     });
   }
 
+  listUpcomingForPeriod(userId: string, startAt: Date, endAt: Date, now: Date) {
+    return prisma.booking.findMany({
+      where: {
+        userId,
+        cancelledAt: null,
+        startAt: { gte: startAt, lt: endAt, gt: now },
+      },
+      select: { startAt: true, endAt: true },
+    });
+  }
+
   cancel(id: string, cancelledAt: Date): Promise<BookingRecord> {
     return prisma.booking.update({
       where: { id },

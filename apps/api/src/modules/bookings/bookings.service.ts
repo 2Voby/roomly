@@ -1,4 +1,6 @@
 import { env } from '../../config/env.js';
+import { format, startOfWeek } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 import { AppError } from '../../shared/errors/app-error.js';
 import { ERROR_CODES } from '../../shared/errors/error-codes.js';
 import {
@@ -10,6 +12,7 @@ import {
 } from '../../shared/utils/dates.js';
 import { RoomsRepository } from '../rooms/rooms.repository.js';
 import { UsersRepository } from '../users/users.repository.js';
+import { exceedsRoomCapacity } from './booking-capacity.js';
 import { BookingsRepository, type BookingRecord } from './bookings.repository.js';
 import type { CreateBookingRequest } from './bookings.schemas.js';
 import type { BookingListType, BookingView } from './bookings.types.js';
@@ -78,6 +81,16 @@ export class BookingsService {
     const participantUserIds = participantUsers
       .filter((user) => user.id !== userId)
       .map((user) => user.id);
+    if (exceedsRoomCapacity(room.capacity, participantUserIds.length)) {
+      throw new AppError(
+        ERROR_CODES.VALIDATION_ERROR,
+        'Кількість людей перевищує місткість переговорної',
+        400,
+        {
+          participantEmails: `У кімнаті може бути не більше ${room.capacity} людей разом з організатором`,
+        },
+      );
+    }
     const fields: Record<string, string> = {};
 
     if (startAt >= endAt) fields.endAt = 'Кінець має бути пізніше за початок';
@@ -160,12 +173,33 @@ export class BookingsService {
     type: BookingListType,
     page: number,
     limit: number,
-  ): Promise<{ items: BookingView[]; total: number; page: number; limit: number }> {
+  ): Promise<{
+    items: BookingView[];
+    total: number;
+    page: number;
+    limit: number;
+    summary: { upcomingThisWeek: number; upcomingDurationMinutes: number };
+  }> {
     const now = new Date();
-    const [total, bookings] = await Promise.all([
+    const weekStart = startOfWeek(toZonedTime(now, env.OFFICE_TIMEZONE), { weekStartsOn: 1 });
+    const weekRange = getWeekRangeUtc(format(weekStart, 'yyyy-MM-dd'), env.OFFICE_TIMEZONE);
+    const [total, bookings, upcomingThisWeek] = await Promise.all([
       this.bookingsRepository.countMine(userId, type, now),
       this.bookingsRepository.listMine(userId, type, now, (page - 1) * limit, limit),
+      this.bookingsRepository.listUpcomingForPeriod(userId, weekRange.start, weekRange.end, now),
     ]);
-    return { items: bookings.map(toBookingView), total, page, limit };
+    return {
+      items: bookings.map(toBookingView),
+      total,
+      page,
+      limit,
+      summary: {
+        upcomingThisWeek: upcomingThisWeek.length,
+        upcomingDurationMinutes: upcomingThisWeek.reduce(
+          (minutes, booking) => minutes + minutesBetween(booking.startAt, booking.endAt),
+          0,
+        ),
+      },
+    };
   }
 }

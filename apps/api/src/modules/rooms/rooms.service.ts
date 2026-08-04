@@ -1,5 +1,8 @@
 import { RoomsRepository } from './rooms.repository.js';
+import { getRoomAvailability } from './room-availability.js';
 import type { RoomView } from './rooms.types.js';
+import type { RoomAvailabilityView } from './rooms.types.js';
+import { env } from '../../config/env.js';
 
 function toRoomView(room: {
   id: string;
@@ -27,5 +30,10 @@ export class RoomsService {
   async list(): Promise<RoomView[]> {
     const rooms = await this.roomsRepository.findAll();
     return rooms.map(toRoomView);
+  }
+
+  async availability(at: Date): Promise<RoomAvailabilityView[]> {
+    const rooms = await this.roomsRepository.findForAvailability(at);
+    return rooms.map((room) => getRoomAvailability(room, room.bookings, at, env.OFFICE_TIMEZONE));
   }
 }

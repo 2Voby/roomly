@@ -1,5 +1,6 @@
 export const ERROR_CODES = {
   VALIDATION_ERROR: 'VALIDATION_ERROR',
+  NOT_FOUND: 'NOT_FOUND',
   UNAUTHORIZED: 'UNAUTHORIZED',
   FORBIDDEN: 'FORBIDDEN',
   EMAIL_ALREADY_EXISTS: 'EMAIL_ALREADY_EXISTS',
@@ -45,6 +46,14 @@ export interface RoomDto {
   createdAt: string;
 }
 
+export type RoomAvailabilityStatus = 'available' | 'occupied' | 'closed';
+
+export interface RoomAvailabilityDto extends RoomDto {
+  status: RoomAvailabilityStatus;
+  occupiedUntil: string | null;
+  nextAvailableAt: string | null;
+}
+
 export interface BookingDto {
   id: string;
   title: string;
@@ -65,4 +74,17 @@ export interface BookingParticipantDto {
   id: string;
   name: string;
   email: string;
+}
+
+export interface MyBookingsSummaryDto {
+  upcomingThisWeek: number;
+  upcomingDurationMinutes: number;
+}
+
+export interface MyBookingsMetaDto {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  summary: MyBookingsSummaryDto;
 }

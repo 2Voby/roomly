@@ -44,5 +44,6 @@ export async function listMyBookings(req: Request, res: Response): Promise<void>
     limit: result.limit,
     total: result.total,
     totalPages: Math.ceil(result.total / result.limit),
+    summary: result.summary,
   });
 }

@@ -181,6 +181,31 @@ async function main(): Promise<void> {
     });
   }
 
+  const bookingParticipants = [
+    {
+      bookingId: bookings[0]?.id,
+      userId: olena.id,
+    },
+    {
+      bookingId: bookings[3]?.id,
+      userId: ivan.id,
+    },
+  ];
+
+  for (const participant of bookingParticipants) {
+    if (!participant.bookingId) continue;
+    await prisma.bookingParticipant.upsert({
+      where: {
+        bookingId_userId: {
+          bookingId: participant.bookingId,
+          userId: participant.userId,
+        },
+      },
+      update: {},
+      create: participant,
+    });
+  }
+
   process.stdout.write(
     `Seeded ${rooms.length} rooms, ${users.length} users and ${bookings.length} bookings\n`,
   );
