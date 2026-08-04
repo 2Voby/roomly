@@ -11,6 +11,7 @@ import { useCancelBooking, useCreateBooking } from '../../features/bookings/hook
 import type { Booking, CreateBookingInput } from '../../features/bookings/types';
 import { useCurrentUser } from '../../features/auth/hooks/use-auth';
 import { useRoomBookings, useRooms } from '../../features/rooms/hooks/use-rooms';
+import { CalendarLegend } from '../../features/schedule/components/CalendarLegend';
 import { WeekCalendar } from '../../features/schedule/components/WeekCalendar';
 import { formatWeekLabel, getWeekStartKey, shiftWeek } from '../../lib/dates';
 import { timezoneNote } from '../../lib/timezone';
@@ -142,6 +143,7 @@ export function SchedulePage() {
           </Button>
         </div>
       </section>
+      <CalendarLegend />
       {bookings.isPending ? (
         <div className="calendar-loading">
           <Spinner label="Завантажуємо розклад…" />
