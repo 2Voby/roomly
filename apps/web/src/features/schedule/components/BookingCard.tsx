@@ -23,6 +23,13 @@ export function BookingCard({
   const color = bookingColorForUser(booking.userId);
   const isCompact = style.height < 2;
   const slotCount = (workingEndMinutes - workingStartMinutes) / CALENDAR_SLOT_MINUTES;
+  const attendees = [
+    { id: booking.userId, name: booking.userName },
+    ...booking.participants.map((participant) => ({ id: participant.id, name: participant.name })),
+  ];
+  const attendeeCount = attendees.length;
+  const attendeeLabel =
+    attendeeCount === 1 ? 'учасник' : attendeeCount < 5 ? 'учасники' : 'учасників';
   const cardStyle = {
     top: `${(style.top / slotCount) * 100}%`,
     height: `calc(${(style.height / slotCount) * 100}% - 2px)`,
@@ -46,7 +53,27 @@ export function BookingCard({
           {formatInTimeZone(new Date(booking.endAt), OFFICE_TIMEZONE, 'HH:mm')}
         </span>
       ) : null}
-      {style.height >= 3 ? <small>{isMine ? 'Ваше бронювання' : booking.userName}</small> : null}
+      <span className="booking-card-footer">
+        <span className="booking-card-avatars" aria-hidden="true">
+          {attendees.slice(0, 3).map((attendee) => (
+            <span className="booking-card-avatar" key={attendee.id}>
+              {attendee.name.trim().charAt(0).toUpperCase()}
+            </span>
+          ))}
+          {attendeeCount > 3 ? (
+            <span className="booking-card-avatar booking-card-avatar-more">
+              +{attendeeCount - 3}
+            </span>
+          ) : null}
+        </span>
+        <span className="booking-card-owner" title={`Забронював: ${booking.userName}`}>
+          {booking.userName}
+        </span>
+        <span className="booking-card-count" title={`${attendeeCount} ${attendeeLabel}`}>
+          <b>{attendeeCount}</b>
+          <small>люд.</small>
+        </span>
+      </span>
     </button>
   );
 }

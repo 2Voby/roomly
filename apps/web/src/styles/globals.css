@@ -415,6 +415,93 @@ a {
   justify-content: center;
   padding: 5px 8px;
 }
+.booking-card-footer {
+  display: flex;
+  width: 100% !important;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+  margin-top: auto;
+  overflow: visible !important;
+}
+.booking-card-avatars {
+  display: flex !important;
+  width: auto !important;
+  flex: 0 0 auto;
+  align-items: center;
+  overflow: visible !important;
+}
+.booking-card-avatar {
+  display: grid !important;
+  width: 18px !important;
+  height: 18px;
+  flex: 0 0 18px;
+  place-items: center;
+  margin-left: -5px;
+  color: var(--booking-text);
+  background: color-mix(in srgb, var(--booking-background) 72%, white);
+  border: 2px solid var(--booking-background);
+  border-radius: 50%;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1;
+}
+.booking-card-avatar:first-child {
+  margin-left: 0;
+}
+.booking-card-avatar-more {
+  color: var(--booking-text) !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+}
+.booking-card-owner {
+  min-width: 0;
+  flex: 1 1 auto;
+  width: auto !important;
+  overflow: hidden !important;
+  color: color-mix(in srgb, var(--booking-text) 78%, white) !important;
+  font-size: 10px !important;
+  font-weight: 700;
+  line-height: 1.1 !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.booking-card-count {
+  display: inline-flex !important;
+  width: auto !important;
+  flex: 0 0 auto;
+  align-items: baseline;
+  gap: 2px;
+  color: color-mix(in srgb, var(--booking-text) 68%, white) !important;
+  font-size: 9px !important;
+  font-weight: 700;
+  line-height: 1 !important;
+}
+.booking-card-count b {
+  color: var(--booking-text);
+  font-size: 10px;
+}
+.booking-card-count small {
+  width: auto !important;
+  color: inherit !important;
+  font-size: 8px !important;
+  line-height: 1 !important;
+}
+.booking-card-compact .booking-card-footer {
+  gap: 4px;
+}
+.booking-card-compact .booking-card-avatar {
+  width: 15px !important;
+  height: 15px;
+  flex-basis: 15px;
+  margin-left: -4px;
+  font-size: 7px;
+}
+.booking-card-compact .booking-card-owner {
+  font-size: 9px !important;
+}
+.booking-card-compact .booking-card-count small {
+  display: none;
+}
 .booking-card-own {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.32);
 }
