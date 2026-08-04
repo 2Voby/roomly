@@ -61,15 +61,19 @@ export function DayColumn({
   }
 
   function getContiguousSelection(startIndex: number, targetIndex: number): SlotSelection {
-    const direction = targetIndex >= startIndex ? 1 : -1;
-    let endIndex = targetIndex;
+    const cappedTargetIndex =
+      targetIndex >= startIndex
+        ? Math.min(targetIndex, startIndex + maxBookingSlots - 1)
+        : Math.max(targetIndex, startIndex - maxBookingSlots + 1);
+    const direction = cappedTargetIndex >= startIndex ? 1 : -1;
+    let endIndex = cappedTargetIndex;
 
     for (
       let index = startIndex;
-      direction === 1 ? index <= targetIndex : index >= targetIndex;
+      direction === 1 ? index <= cappedTargetIndex : index >= cappedTargetIndex;
       index += direction
     ) {
-      if (blockedSlots[index] || Math.abs(index - startIndex) >= maxBookingSlots) {
+      if (blockedSlots[index]) {
         endIndex = index - direction;
         break;
       }
@@ -82,8 +86,13 @@ export function DayColumn({
   }
 
   function emitSelection(selected: SlotSelection) {
-    const start = slotRange(dayKey, selected.startIndex, workingStartMinutes);
-    const end = slotRange(dayKey, selected.endIndex + 1, workingStartMinutes);
+    const startIndex = Math.min(selected.startIndex, selected.endIndex);
+    const endIndex = Math.min(
+      Math.max(selected.startIndex, selected.endIndex),
+      startIndex + maxBookingSlots - 1,
+    );
+    const start = slotRange(dayKey, startIndex, workingStartMinutes);
+    const end = slotRange(dayKey, endIndex, workingStartMinutes);
     onSlotSelect(start.startAt, end.endAt);
   }
 
