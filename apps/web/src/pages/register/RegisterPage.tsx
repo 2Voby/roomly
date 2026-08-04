@@ -2,11 +2,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 
-import { ApiError } from '../../lib/api-client';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { PasswordInput } from '../../components/ui/PasswordInput';
 import { AuthLayout } from '../../features/auth/components/AuthLayout';
 import { useRegister } from '../../features/auth/hooks/use-auth';
+import { ApiError } from '../../lib/api-client';
 import {
   registerFormSchema,
   type RegisterFormValues,
@@ -22,11 +23,12 @@ export function RegisterPage() {
     formState: { errors },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerFormSchema),
-    defaultValues: { name: '', email: '', password: '' },
+    defaultValues: { name: '', email: '', password: '', confirmPassword: '' },
   });
 
   function onSubmit(values: RegisterFormValues) {
-    registerMutation.mutate(values, {
+    const payload = { name: values.name, email: values.email, password: values.password };
+    registerMutation.mutate(payload, {
       onSuccess: () => navigate('/schedule', { replace: true }),
       onError: (error) => {
         if (error instanceof ApiError && error.fields) {
@@ -38,10 +40,13 @@ export function RegisterPage() {
   }
 
   return (
-    <AuthLayout title="Створіть акаунт" subtitle="Бронюйте кімнати без зайвих листувань і таблиць.">
+    <AuthLayout
+      title="Створення акаунта"
+      subtitle="Створіть акаунт і бронюйте переговорні за кілька секунд."
+    >
       <form className="auth-form" onSubmit={handleSubmit(onSubmit)} noValidate>
         <Input
-          label="Імʼя"
+          label="Ім’я"
           autoComplete="name"
           error={errors.name?.message}
           {...register('name')}
@@ -53,23 +58,29 @@ export function RegisterPage() {
           error={errors.email?.message}
           {...register('email')}
         />
-        <Input
+        <PasswordInput
           label="Пароль"
-          type="password"
           autoComplete="new-password"
           error={errors.password?.message}
           {...register('password')}
         />
+        <PasswordInput
+          label="Підтвердження пароля"
+          autoComplete="new-password"
+          error={errors.confirmPassword?.message}
+          {...register('confirmPassword')}
+        />
+        <p className="password-hint">Від 8 до 72 символів</p>
         {registerMutation.error &&
         !(registerMutation.error instanceof ApiError && registerMutation.error.fields) ? (
           <p className="form-error">{registerMutation.error.message}</p>
         ) : null}
-        <Button type="submit" disabled={registerMutation.isPending}>
-          {registerMutation.isPending ? 'Створюємо…' : 'Створити акаунт'}
+        <Button className="auth-submit" type="submit" disabled={registerMutation.isPending}>
+          {registerMutation.isPending ? 'Створюємо…' : 'Зареєструватися'}
         </Button>
       </form>
       <p className="auth-switch">
-        Вже маєте акаунт? <Link to="/login">Увійти</Link>
+        Уже маєте акаунт? <Link to="/login">Увійти</Link>
       </p>
     </AuthLayout>
   );

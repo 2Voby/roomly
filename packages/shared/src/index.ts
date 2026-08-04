@@ -49,8 +49,18 @@ export interface BookingDto {
   startAt: string;
   endAt: string;
   roomId: string;
+  roomName: string;
+  roomFloor: number;
+  roomCapacity: number;
   userId: string;
   userName: string;
+  participants: BookingParticipantDto[];
   cancelledAt: string | null;
   createdAt: string;
+}
+
+export interface BookingParticipantDto {
+  id: string;
+  name: string;
+  email: string;
 }

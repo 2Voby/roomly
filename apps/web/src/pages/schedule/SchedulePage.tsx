@@ -8,7 +8,7 @@ import { Spinner } from '../../components/ui/Spinner';
 import { BookingDetails } from '../../features/bookings/components/BookingDetails';
 import { BookingForm } from '../../features/bookings/components/BookingForm';
 import { useCancelBooking, useCreateBooking } from '../../features/bookings/hooks/use-bookings';
-import type { Booking } from '../../features/bookings/types';
+import type { Booking, CreateBookingInput } from '../../features/bookings/types';
 import { useCurrentUser } from '../../features/auth/hooks/use-auth';
 import { useRoomBookings, useRooms } from '../../features/rooms/hooks/use-rooms';
 import { WeekCalendar } from '../../features/schedule/components/WeekCalendar';
@@ -27,6 +27,8 @@ export function SchedulePage() {
   const [weekStart, setWeekStart] = useState(getWeekStartKey());
   const [slot, setSlot] = useState<SlotSelection | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const bookings = useRoomBookings(selectedRoomId, weekStart);
   const createBooking = useCreateBooking();
   const cancelBooking = useCancelBooking();
@@ -37,14 +39,40 @@ export function SchedulePage() {
 
   const selectedRoom = rooms.data?.find((room) => room.id === selectedRoomId);
 
-  function submitBooking(input: { title: string; startAt: string; endAt: string; roomId: string }) {
+  useEffect(() => {
+    if (!toast) return undefined;
+    const timeout = window.setTimeout(() => setToast(null), 4200);
+    return () => window.clearTimeout(timeout);
+  }, [toast]);
+
+  function submitBooking(input: CreateBookingInput) {
     if (!selectedRoomId) return;
-    createBooking.mutate({ ...input, roomId: selectedRoomId }, { onSuccess: () => setSlot(null) });
+    createBooking.mutate(
+      { ...input, roomId: selectedRoomId },
+      {
+        onSuccess: (booking) => {
+          setSlot(null);
+          setToast(
+            `Переговорну заброньовано · ${booking.title} · ${new Date(booking.startAt).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}–${new Date(booking.endAt).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}`,
+          );
+        },
+      },
+    );
   }
 
   function handleCancel() {
-    if (!selectedBooking || !window.confirm('Скасувати це бронювання?')) return;
-    cancelBooking.mutate(selectedBooking.id, { onSuccess: () => setSelectedBooking(null) });
+    if (selectedBooking) setBookingToCancel(selectedBooking);
+  }
+
+  function confirmCancel() {
+    if (!bookingToCancel) return;
+    cancelBooking.mutate(bookingToCancel.id, {
+      onSuccess: () => {
+        setBookingToCancel(null);
+        setSelectedBooking(null);
+        setToast('Бронювання скасовано');
+      },
+    });
   }
 
   if (rooms.isPending)
@@ -73,8 +101,9 @@ export function SchedulePage() {
     <div className="content-wrap schedule-page">
       <div className="page-heading">
         <div>
-          <h1>Розклад</h1>
-          <p>Оберіть кімнату та вільний час для зустрічі.</p>
+          <span className="section-kicker">Тижневий огляд</span>
+          <h1>Розклад переговорних</h1>
+          <p>Оберіть кімнату та забронюйте зручний час</p>
         </div>
         <span className="timezone-note">◉ {timezoneNote()}</span>
       </div>
@@ -142,6 +171,8 @@ export function SchedulePage() {
             startAt={slot.startAt}
             endAt={slot.endAt}
             roomName={selectedRoom.name}
+            currentUserEmail={user?.email ?? ''}
+            bookings={bookings.data ?? []}
             isPending={createBooking.isPending}
             error={createBooking.error}
             onSubmit={submitBooking}
@@ -162,6 +193,48 @@ export function SchedulePage() {
             onClose={() => setSelectedBooking(null)}
           />
         </Modal>
+      ) : null}
+      {bookingToCancel ? (
+        <Modal title="Скасувати бронювання?" onClose={() => setBookingToCancel(null)}>
+          <div className="cancel-dialog">
+            <div className="cancel-dialog-icon">!</div>
+            <p>
+              Бронювання «{bookingToCancel.title}» на{' '}
+              {new Date(bookingToCancel.startAt).toLocaleDateString('uk-UA', {
+                day: 'numeric',
+                month: 'long',
+              })}
+              ,{' '}
+              {new Date(bookingToCancel.startAt).toLocaleTimeString('uk-UA', {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}{' '}
+              буде скасовано.
+            </p>
+            <div className="modal-actions">
+              <Button type="button" variant="ghost" onClick={() => setBookingToCancel(null)}>
+                Не скасовувати
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                disabled={cancelBooking.isPending}
+                onClick={confirmCancel}
+              >
+                {cancelBooking.isPending ? 'Скасовуємо…' : 'Так, скасувати'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      ) : null}
+      {toast ? (
+        <div className="toast" role="status">
+          <span className="toast-icon">✓</span>
+          <span>{toast}</span>
+          <button type="button" aria-label="Закрити повідомлення" onClick={() => setToast(null)}>
+            ×
+          </button>
+        </div>
       ) : null}
     </div>
   );

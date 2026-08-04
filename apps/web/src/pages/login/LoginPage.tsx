@@ -2,9 +2,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-import { ApiError } from '../../lib/api-client';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { PasswordInput } from '../../components/ui/PasswordInput';
+import { ApiError } from '../../lib/api-client';
 import { AuthLayout } from '../../features/auth/components/AuthLayout';
 import { useLogin } from '../../features/auth/hooks/use-auth';
 import { loginFormSchema, type LoginFormValues } from '../../features/auth/schemas/auth-schemas';
@@ -39,7 +40,7 @@ export function LoginPage() {
   }
 
   return (
-    <AuthLayout title="Вітаємо знову" subtitle="Увійдіть, щоб забронювати переговорну кімнату.">
+    <AuthLayout title="З поверненням" subtitle="Увійдіть, щоб переглянути розклад переговорних">
       <form className="auth-form" onSubmit={handleSubmit(onSubmit)} noValidate>
         <Input
           label="Email"
@@ -48,9 +49,8 @@ export function LoginPage() {
           error={errors.email?.message}
           {...register('email')}
         />
-        <Input
+        <PasswordInput
           label="Пароль"
-          type="password"
           autoComplete="current-password"
           error={errors.password?.message}
           {...register('password')}
@@ -58,12 +58,12 @@ export function LoginPage() {
         {login.error && !(login.error instanceof ApiError && login.error.fields) ? (
           <p className="form-error">{login.error.message}</p>
         ) : null}
-        <Button type="submit" disabled={login.isPending}>
+        <Button className="auth-submit" type="submit" disabled={login.isPending}>
           {login.isPending ? 'Входимо…' : 'Увійти'}
         </Button>
       </form>
       <p className="auth-switch">
-        Немає акаунта? <Link to="/register">Зареєструватися</Link>
+        Немає акаунта? <Link to="/register">Створити акаунт</Link>
       </p>
     </AuthLayout>
   );

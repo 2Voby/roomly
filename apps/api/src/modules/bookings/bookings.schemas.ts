@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+const participantEmailSchema = z.string().trim().toLowerCase().email('Введіть коректний email');
+
 export const createBookingSchema = z.object({
   title: z
     .string()
@@ -9,6 +11,7 @@ export const createBookingSchema = z.object({
   startAt: z.string().datetime({ offset: true }),
   endAt: z.string().datetime({ offset: true }),
   roomId: z.string().uuid(),
+  participantEmails: z.array(participantEmailSchema).max(20).default([]),
 });
 
 export const bookingParamsSchema = z.object({

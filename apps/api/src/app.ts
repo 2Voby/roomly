@@ -10,6 +10,7 @@ import { authRouter } from './modules/auth/auth.routes.js';
 import { bookingsRouter } from './modules/bookings/bookings.routes.js';
 import { healthRouter } from './modules/health/health.routes.js';
 import { roomsRouter } from './modules/rooms/rooms.routes.js';
+import { usersRouter } from './modules/users/users.routes.js';
 import { errorHandler } from './shared/middleware/error-handler.js';
 import { notFound } from './shared/middleware/not-found.js';
 
@@ -28,6 +29,7 @@ app.use(sessionMiddleware);
 app.use('/api/health', healthRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/rooms', roomsRouter);
+app.use('/api/users', usersRouter);
 app.use('/api/bookings', bookingsRouter);
 
 app.use(notFound);

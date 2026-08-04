@@ -7,4 +7,5 @@ export interface CreateBookingInput {
   startAt: string;
   endAt: string;
   roomId: string;
+  participantEmails: string[];
 }

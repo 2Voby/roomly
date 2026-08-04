@@ -7,6 +7,7 @@ import { LoginPage } from '../pages/login/LoginPage';
 import { MyBookingsPage } from '../pages/my-bookings/MyBookingsPage';
 import { NotFoundPage } from '../pages/not-found/NotFoundPage';
 import { RegisterPage } from '../pages/register/RegisterPage';
+import { RoomsPage } from '../pages/rooms/RoomsPage';
 import { SchedulePage } from '../pages/schedule/SchedulePage';
 
 function ProtectedRoute() {
@@ -34,6 +35,7 @@ export function AppRouter() {
       <Route element={<ProtectedRoute />}>
         <Route path="/schedule" element={<SchedulePage />} />
         <Route path="/my-bookings" element={<MyBookingsPage />} />
+        <Route path="/rooms" element={<RoomsPage />} />
       </Route>
       <Route path="/" element={<Navigate to="/schedule" replace />} />
       <Route path="*" element={<NotFoundPage />} />

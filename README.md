@@ -157,6 +157,14 @@ Unit-тести перевіряють overlap rules, а Supertest переві�
 - Docker Compose з persistent PostgreSQL, healthchecks, automatic migration/seed, nginx SPA fallback і `/api` proxy;
 - strict TypeScript, lint/format scripts, shutdown із Prisma/session disconnect.
 
+## Оновлений workspace UI
+
+Основний інтерфейс Roomly виконаний українською мовою у єдиній SaaS-системі: темний sidebar, responsive application shell, split-screen auth, кольорові картки переговорних, тижневий CSS Grid-календар, toast feedback, summary cards на сторінці «Мої бронювання» та окремий огляд переговорних з фільтром місткості.
+
+У модальному створенні бронювання доступні ручні поля початку/кінця з кроком 30 хвилин, швидкі тривалості від 30 хвилин до 4 годин, локальна перевірка перетинів та пошук зареєстрованих учасників за email. Сервер повторює всі перевірки, а учасники зберігаються в `booking_participants`.
+
+Додатковий endpoint для пошуку учасників: `GET /api/users?email=...`.
+
 ## Bonus / ще не реалізовано
 
 Не входять до цього етапу: SMTP/email notifications, password reset, admin management UI, Google Calendar integration, recurring bookings, background worker/cron, OpenAPI/Swagger UI та browser push notifications. `NOTIFY_BEFORE_MINUTES` уже є в env для майбутнього notification worker.

@@ -8,6 +8,7 @@ import {
   minutesBetween,
 } from '../../shared/utils/dates.js';
 import { RoomsRepository } from '../rooms/rooms.repository.js';
+import { UsersRepository } from '../users/users.repository.js';
 import { BookingsRepository, type BookingRecord } from './bookings.repository.js';
 import type { CreateBookingRequest } from './bookings.schemas.js';
 import type { BookingListType, BookingView } from './bookings.types.js';
@@ -19,10 +20,18 @@ function toBookingView(booking: BookingRecord): BookingView {
     startAt: booking.startAt.toISOString(),
     endAt: booking.endAt.toISOString(),
     roomId: booking.roomId,
+    roomName: booking.room.name,
+    roomFloor: booking.room.floor,
+    roomCapacity: booking.room.capacity,
     userId: booking.userId,
     userName: booking.user.name,
     cancelledAt: booking.cancelledAt?.toISOString() ?? null,
     createdAt: booking.createdAt.toISOString(),
+    participants: booking.participants.map(({ user }) => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+    })),
   };
 }
 
@@ -37,6 +46,7 @@ export class BookingsService {
   constructor(
     private readonly bookingsRepository = new BookingsRepository(),
     private readonly roomsRepository = new RoomsRepository(),
+    private readonly usersRepository = new UsersRepository(),
   ) {}
 
   async listForRoom(roomId: string, weekStart: string): Promise<BookingView[]> {
@@ -54,6 +64,19 @@ export class BookingsService {
 
     const startAt = new Date(input.startAt);
     const endAt = new Date(input.endAt);
+    const participantEmails = [...new Set(input.participantEmails)];
+    const participantUsers = await this.usersRepository.findByEmails(participantEmails);
+    const missingParticipantEmails = participantEmails.filter(
+      (email) => !participantUsers.some((user) => user.email === email),
+    );
+    if (missingParticipantEmails.length > 0) {
+      throw new AppError(ERROR_CODES.VALIDATION_ERROR, 'Перевірте email учасників зустрічі', 400, {
+        participantEmails: `Користувача не знайдено: ${missingParticipantEmails.join(', ')}`,
+      });
+    }
+    const participantUserIds = participantUsers
+      .filter((user) => user.id !== userId)
+      .map((user) => user.id);
     const fields: Record<string, string> = {};
 
     if (startAt >= endAt) fields.endAt = 'Кінець має бути пізніше за початок';
@@ -99,6 +122,7 @@ export class BookingsService {
         endAt,
         roomId: input.roomId,
         userId,
+        participantUserIds,
       });
       if (result.conflict || !result.booking) {
         throw new AppError('BOOKING_CONFLICT', 'Цей час уже зайнятий', 409);

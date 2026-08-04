@@ -5,6 +5,7 @@ import { prisma } from '../../database/prisma.js';
 const bookingInclude = {
   user: true,
   room: true,
+  participants: { include: { user: true } },
 } satisfies Prisma.BookingInclude;
 
 export type BookingRecord = Prisma.BookingGetPayload<{ include: typeof bookingInclude }>;
@@ -32,6 +33,7 @@ export class BookingsRepository {
     endAt: Date;
     roomId: string;
     userId: string;
+    participantUserIds: string[];
   }): Promise<{ booking: BookingRecord | null; conflict: boolean }> {
     return prisma.$transaction(async (tx) => {
       const overlap = await tx.booking.findFirst({
@@ -45,7 +47,19 @@ export class BookingsRepository {
       });
       if (overlap) return { booking: null, conflict: true };
 
-      const booking = await tx.booking.create({ data, include: bookingInclude });
+      const booking = await tx.booking.create({
+        data: {
+          title: data.title,
+          startAt: data.startAt,
+          endAt: data.endAt,
+          roomId: data.roomId,
+          userId: data.userId,
+          participants: {
+            create: data.participantUserIds.map((userId) => ({ userId })),
+          },
+        },
+        include: bookingInclude,
+      });
       return { booking, conflict: false };
     });
   }

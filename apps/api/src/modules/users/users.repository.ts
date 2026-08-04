@@ -10,4 +10,19 @@ export class UsersRepository {
   findByEmail(email: string): Promise<User | null> {
     return prisma.user.findUnique({ where: { email } });
   }
+
+  findByEmails(emails: string[]): Promise<User[]> {
+    return prisma.user.findMany({ where: { email: { in: emails } } });
+  }
+
+  searchByEmail(email: string, excludedUserId: string): Promise<User[]> {
+    return prisma.user.findMany({
+      where: {
+        id: { not: excludedUserId },
+        email: { contains: email, mode: 'insensitive' },
+      },
+      orderBy: { email: 'asc' },
+      take: 8,
+    });
+  }
 }

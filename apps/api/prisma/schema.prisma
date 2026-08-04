@@ -16,6 +16,7 @@ model User {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   bookings        Booking[]
+  bookingParticipants BookingParticipant[]
 
   @@index([email])
   @@map("users")
@@ -45,12 +46,25 @@ model Booking {
   cancelledAt DateTime? @db.Timestamptz(3)
   room        Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  participants BookingParticipant[]
 
   @@index([roomId, startAt])
   @@index([userId, startAt])
   @@index([startAt])
   @@index([cancelledAt])
   @@map("bookings")
+}
+
+model BookingParticipant {
+  bookingId String   @db.Uuid
+  userId    String   @db.Uuid
+  addedAt   DateTime @default(now())
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([bookingId, userId])
+  @@index([userId])
+  @@map("booking_participants")
 }
 
 model Session {
