@@ -47,19 +47,31 @@ export function BookingDetails({
         Тривалість: {durationLabel} · часова зона {getUserTimezone()}
         {getUserTimezone() !== OFFICE_TIMEZONE ? ` · офісний час ${OFFICE_TIMEZONE}` : ''}
       </p>
-      <p>Забронював: {booking.userName}</p>
-      {booking.participants.length > 0 ? (
-        <div className="booking-participants-details">
-          <span>Учасники</span>
-          <div>
-            {booking.participants.map((participant) => (
-              <span key={participant.id}>
-                {participant.name} · {participant.email}
-              </span>
-            ))}
-          </div>
+      <div className="booking-people-list">
+        <div className="booking-person booking-person-organizer">
+          <span className="booking-person-avatar">
+            {booking.userName.trim().charAt(0).toUpperCase()}
+          </span>
+          <span className="booking-person-copy">
+            <strong>{booking.userName}</strong>
+            <small>Організатор</small>
+          </span>
+          <span className="booking-person-crown" aria-label="Організатор" title="Організатор">
+            👑
+          </span>
         </div>
-      ) : null}
+        {booking.participants.map((participant) => (
+          <div className="booking-person" key={participant.id}>
+            <span className="booking-person-avatar">
+              {participant.name.trim().charAt(0).toUpperCase()}
+            </span>
+            <span className="booking-person-copy">
+              <strong>{participant.name}</strong>
+              <small>{participant.email}</small>
+            </span>
+          </div>
+        ))}
+      </div>
       <div className="modal-actions">
         <Button type="button" variant="ghost" onClick={onClose}>
           Закрити

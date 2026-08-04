@@ -959,20 +959,60 @@ a {
   color: #7a879b;
   font-size: 11px;
 }
-.booking-participants-details {
+.booking-people-list {
   display: grid;
-  gap: 6px;
+  gap: 7px;
+  padding: 10px;
+  background: #f7f9fc;
+  border: 1px solid #e6ebf2;
+  border-radius: 12px;
 }
-.booking-participants-details > span {
-  color: #526078;
+.booking-person {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+}
+.booking-person-organizer {
+  padding-bottom: 7px;
+  border-bottom: 1px solid #e6ebf2;
+}
+.booking-person-avatar {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  place-items: center;
+  color: #24324d;
+  background: #dff5a9;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+}
+.booking-person-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+.booking-person-copy strong,
+.booking-person-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.booking-person-copy strong {
+  color: #283650;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 750;
 }
-.booking-participants-details > div {
-  display: grid;
-  gap: 3px;
-  color: #647188;
-  font-size: 13px;
+.booking-person-copy small {
+  color: #77839a;
+  font-size: 11px;
+}
+.booking-person-crown {
+  margin-left: auto;
+  font-size: 16px;
+  line-height: 1;
 }
 .modal-actions {
   display: flex;
