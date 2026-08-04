@@ -2,13 +2,13 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: roomly
-      POSTGRES_PASSWORD: roomly
-      POSTGRES_DB: roomly
+      POSTGRES_USER: ${POSTGRES_USER:-roomly}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-roomly}
+      POSTGRES_DB: ${POSTGRES_DB:-roomly}
     volumes:
       - roomly-postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U roomly -d roomly']
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-roomly} -d ${POSTGRES_DB:-roomly}']
       interval: 5s
       timeout: 5s
       retries: 12
@@ -20,11 +20,11 @@ services:
     environment:
       NODE_ENV: development
       PORT: 4000
-      DATABASE_URL: postgresql://roomly:roomly@postgres:5432/roomly?schema=public
-      SESSION_SECRET: docker-development-secret-change-me-please-123456789
-      OFFICE_TIMEZONE: Europe/Kyiv
-      WEB_ORIGIN: http://localhost:3000
-      NOTIFY_BEFORE_MINUTES: 10
+      DATABASE_URL: postgresql://${POSTGRES_USER:-roomly}:${POSTGRES_PASSWORD:-roomly}@postgres:5432/${POSTGRES_DB:-roomly}?schema=public
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set in .env}
+      OFFICE_TIMEZONE: ${OFFICE_TIMEZONE:-Europe/Kyiv}
+      WEB_ORIGIN: ${DOCKER_WEB_ORIGIN:-http://localhost:3000}
+      NOTIFY_BEFORE_MINUTES: ${NOTIFY_BEFORE_MINUTES:-10}
     depends_on:
       postgres:
         condition: service_healthy
@@ -46,7 +46,7 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         VITE_API_URL: ''
-        VITE_OFFICE_TIMEZONE: Europe/Kyiv
+        VITE_OFFICE_TIMEZONE: ${VITE_OFFICE_TIMEZONE:-Europe/Kyiv}
     ports:
       - '3000:80'
     depends_on:

@@ -101,6 +101,7 @@ POST /api/auth/login
 POST /api/auth/logout
 GET  /api/auth/me
 GET  /api/rooms
+GET  /api/rooms/availability?at=ISO_DATETIME
 GET  /api/rooms/:roomId/bookings?weekStart=YYYY-MM-DD
 POST /api/bookings
 DELETE /api/bookings/:bookingId
@@ -174,6 +175,14 @@ Unit-тести перевіряють overlap rules, а Supertest переві�
 У модальному створенні бронювання доступні ручні поля початку/кінця з кроком 30 хвилин, швидкі тривалості від 30 хвилин до 4 годин, локальна перевірка перетинів та пошук зареєстрованих учасників за email. Сервер повторює всі перевірки, а учасники зберігаються в `booking_participants`.
 
 Додатковий endpoint для пошуку учасників: `GET /api/users?email=...`.
+
+## Додатково реалізовано в hardening-гілці
+
+- `GET /api/rooms/availability` повертає статус кімнати: вільна, зайнята або поза робочими годинами, а також час наступної доступності.
+- Для бронювання сервер перевіряє місткість кімнати з урахуванням організатора та учасників.
+- `GET /api/bookings/my` підтримує pagination metadata; frontend показує кнопку «Показати ще».
+- Посилання з «Моїх бронювань» відкриває правильну кімнату, тиждень і деталі бронювання.
+- Додані unit/Supertest-перевірки capacity, availability та API error contracts.
 
 ## Bonus / ще не реалізовано
 
