@@ -80,6 +80,9 @@ export function BookingForm({
       : null;
   const durationOptions = getBookingDurationOptions(previewStartAt);
   const conflict = findBookingConflict(bookings, selectedStartAt, selectedEndAt);
+  const hasInvalidStartTime = Boolean(
+    selectedStartTime && selectedEndTime && timeToMinutes(selectedStartTime) === null,
+  );
   const normalizedCurrentUserEmail = currentUserEmail.trim().toLowerCase();
 
   function setQuickDuration(minutes: number) {
@@ -171,7 +174,10 @@ export function BookingForm({
             )}
           />
         </div>
-        <div className="time-range-validation-slot" aria-live="polite">
+        <div
+          className={`time-range-validation-slot ${conflict || hasInvalidStartTime ? 'time-range-validation-slot-visible' : ''}`}
+          aria-live="polite"
+        >
           {conflict ? (
             <p className="time-range-conflict" role="alert">
               Не можна обрати цей час — тут уже є зустріч «{conflict.title}» ({' '}
@@ -179,7 +185,7 @@ export function BookingForm({
               {formatOfficeTime(new Date(conflict.endAt))})
             </p>
           ) : null}
-          {selectedStartTime && selectedEndTime && timeToMinutes(selectedStartTime) === null ? (
+          {hasInvalidStartTime ? (
             <p className="field-error">Оберіть коректний час початку</p>
           ) : null}
         </div>
