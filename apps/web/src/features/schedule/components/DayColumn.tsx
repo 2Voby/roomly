@@ -1,12 +1,12 @@
-import { useRef, useState, type PointerEvent } from 'react';
+import { useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import { toZonedTime } from 'date-fns-tz';
 
 import type { Booking } from '../../bookings/types';
-import { CALENDAR_END_MINUTES, CALENDAR_START_MINUTES, isToday } from '../../../lib/dates';
+import { BOOKING_MAX_DURATION_MINUTES, CALENDAR_SLOT_MINUTES, isToday } from '../../../lib/dates';
 import { OFFICE_TIMEZONE } from '../../../lib/timezone';
 import { BookingCard } from './BookingCard';
 import { CurrentTimeIndicator } from './CurrentTimeIndicator';
-import { isSlotBooked, MAX_BOOKING_SLOTS, slotRange, SLOT_COUNT } from '../utils/calendar';
+import { isSlotBooked, slotRange } from '../utils/calendar';
 
 interface SlotSelection {
   startIndex: number;
@@ -22,15 +22,21 @@ export function DayColumn({
   dayKey,
   bookings,
   currentUserId,
+  workingStartMinutes,
+  workingEndMinutes,
   onSlotSelect,
   onBookingClick,
 }: {
   dayKey: string;
   bookings: Booking[];
   currentUserId: string;
+  workingStartMinutes: number;
+  workingEndMinutes: number;
   onSlotSelect: (startAt: Date, endAt: Date) => void;
   onBookingClick: (booking: Booking) => void;
 }) {
+  const slotCount = (workingEndMinutes - workingStartMinutes) / CALENDAR_SLOT_MINUTES;
+  const maxBookingSlots = BOOKING_MAX_DURATION_MINUTES / CALENDAR_SLOT_MINUTES;
   const dayRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragState | null>(null);
   const suppressClickRef = useRef(false);
@@ -38,21 +44,20 @@ export function DayColumn({
   const current = toZonedTime(new Date(), OFFICE_TIMEZONE);
   const localMinutes = current.getHours() * 60 + current.getMinutes();
   const currentTop =
-    ((localMinutes - CALENDAR_START_MINUTES) / (CALENDAR_END_MINUTES - CALENDAR_START_MINUTES)) *
-    100;
+    ((localMinutes - workingStartMinutes) / (workingEndMinutes - workingStartMinutes)) * 100;
 
-  const blockedSlots = Array.from({ length: SLOT_COUNT }, (_, index) =>
-    isSlotBooked(slotRange(dayKey, index), bookings),
+  const blockedSlots = Array.from({ length: slotCount }, (_, index) =>
+    isSlotBooked(slotRange(dayKey, index, workingStartMinutes), bookings),
   );
 
   function clampSlotIndex(index: number) {
-    return Math.max(0, Math.min(SLOT_COUNT - 1, index));
+    return Math.max(0, Math.min(slotCount - 1, index));
   }
 
   function getSlotIndexFromPointer(event: PointerEvent<HTMLDivElement>) {
     const bounds = dayRef.current?.getBoundingClientRect();
     if (!bounds || bounds.height <= 0) return 0;
-    return clampSlotIndex(Math.floor(((event.clientY - bounds.top) / bounds.height) * SLOT_COUNT));
+    return clampSlotIndex(Math.floor(((event.clientY - bounds.top) / bounds.height) * slotCount));
   }
 
   function getContiguousSelection(startIndex: number, targetIndex: number): SlotSelection {
@@ -64,7 +69,7 @@ export function DayColumn({
       direction === 1 ? index <= targetIndex : index >= targetIndex;
       index += direction
     ) {
-      if (blockedSlots[index] || Math.abs(index - startIndex) >= MAX_BOOKING_SLOTS) {
+      if (blockedSlots[index] || Math.abs(index - startIndex) >= maxBookingSlots) {
         endIndex = index - direction;
         break;
       }
@@ -77,8 +82,8 @@ export function DayColumn({
   }
 
   function emitSelection(selected: SlotSelection) {
-    const start = slotRange(dayKey, selected.startIndex);
-    const end = slotRange(dayKey, selected.endIndex + 1);
+    const start = slotRange(dayKey, selected.startIndex, workingStartMinutes);
+    const end = slotRange(dayKey, selected.endIndex + 1, workingStartMinutes);
     onSlotSelect(start.startAt, end.endAt);
   }
 
@@ -143,12 +148,13 @@ export function DayColumn({
     <div
       className={`day-column ${isToday(dayKey) ? 'day-column-today' : ''}`}
       ref={dayRef}
+      style={{ '--calendar-slot-size': `${100 / slotCount}%` } as CSSProperties}
       onPointerMove={handlePointerMove}
       onPointerUp={finishDrag}
       onPointerCancel={cancelDrag}
     >
-      {Array.from({ length: SLOT_COUNT }, (_, index) => {
-        const range = slotRange(dayKey, index);
+      {Array.from({ length: slotCount }, (_, index) => {
+        const range = slotRange(dayKey, index, workingStartMinutes);
         const isSelected =
           selection !== null && index >= selection.startIndex && index <= selection.endIndex;
         const isBlocked = blockedSlots[index];
@@ -156,7 +162,10 @@ export function DayColumn({
         return (
           <button
             className={`slot-button ${isSelected ? 'slot-button-selected' : ''} ${isBlocked ? 'slot-button-blocked' : ''}`}
-            style={{ top: `${(index / SLOT_COUNT) * 100}%` }}
+            style={{
+              top: `${(index / slotCount) * 100}%`,
+              height: `${100 / slotCount}%`,
+            }}
             type="button"
             key={range.startAt.toISOString()}
             aria-disabled={isBlocked}
@@ -175,6 +184,8 @@ export function DayColumn({
           key={booking.id}
           booking={booking}
           isMine={booking.userId === currentUserId}
+          workingStartMinutes={workingStartMinutes}
+          workingEndMinutes={workingEndMinutes}
           onClick={() => onBookingClick(booking)}
         />
       ))}

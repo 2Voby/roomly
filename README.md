@@ -113,6 +113,16 @@ Auth — cookie-based session. Cookie `httpOnly`, `secure` у production, `sameS
 
 Всі `Booking.startAt/endAt` зберігаються як UTC timestamps. Користувацький інтерфейс показує розклад у `Europe/Kyiv`; якщо timezone браузера інший, він показується біля розкладу.
 
+Робочий час зберігається на кожній кімнаті в полях `workStartMinutes` і `workEndMinutes`. Seed задає для нових кімнат `09:00–19:00`, а повторний seed не перезаписує ручні зміни цих полів. Змінити час без адмінки можна напряму в PostgreSQL, наприклад:
+
+```sql
+UPDATE rooms
+SET "workStartMinutes" = 480, "workEndMinutes" = 1080
+WHERE name = 'Акваріум';
+```
+
+API повертає ці значення через `GET /api/rooms`, а календар і серверна перевірка бронювань використовують години вибраної кімнати.
+
 Перетин інтервалів —
 
 ```text
@@ -150,7 +160,7 @@ Unit-тести перевіряють overlap rules, а Supertest переві�
 - auth register/login/logout/me, нормалізація email, bcrypt hash, server-side Zod validation;
 - PostgreSQL + Prisma models User, Room, Booking, Session, indexes і active booking exclusion constraint;
 - rooms, weekly room bookings, create/cancel booking, my upcoming/past bookings;
-- правила title/duration/30-minute slots/future/09:00–19:00 Europe/Kyiv/UTC/conflicts;
+- правила title/duration/30-minute slots/future/UTC/conflicts і робочий час кожної кімнати;
 - feature-based backend і frontend без FullCalendar/готових calendar components;
 - CSS Grid календар із днями по горизонталі, часом вертикально, current-day/time indicator, own/other booking styles і click-to-book/details/cancel;
 - loading, empty, error states, responsive shell, protected routes, typed API client з credentials і AbortSignal;
@@ -159,7 +169,7 @@ Unit-тести перевіряють overlap rules, а Supertest переві�
 
 ## Оновлений workspace UI
 
-Основний інтерфейс Roomly виконаний українською мовою у єдиній SaaS-системі: темний sidebar, responsive application shell, split-screen auth, кольорові картки переговорних, тижневий CSS Grid-календар, toast feedback, summary cards на сторінці «Мої бронювання» та окремий огляд переговорних з фільтром місткості.
+Основний інтерфейс Roomly виконаний українською мовою у єдиній SaaS-системі: компактний top header із навігацією, responsive application shell, split-screen auth, кольорові картки переговорних, тижневий CSS Grid-календар, toast feedback, summary cards на сторінці «Мої бронювання» та окремий огляд переговорних з фільтром місткості.
 
 У модальному створенні бронювання доступні ручні поля початку/кінця з кроком 30 хвилин, швидкі тривалості від 30 хвилин до 4 годин, локальна перевірка перетинів та пошук зареєстрованих учасників за email. Сервер повторює всі перевірки, а учасники зберігаються в `booking_participants`.
 

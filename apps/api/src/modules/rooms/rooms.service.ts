@@ -6,6 +6,8 @@ function toRoomView(room: {
   name: string;
   floor: number;
   capacity: number;
+  workStartMinutes: number;
+  workEndMinutes: number;
   createdAt: Date;
 }): RoomView {
   return {
@@ -13,6 +15,8 @@ function toRoomView(room: {
     name: room.name,
     floor: room.floor,
     capacity: room.capacity,
+    workStartMinutes: room.workStartMinutes,
+    workEndMinutes: room.workEndMinutes,
     createdAt: room.createdAt.toISOString(),
   };
 }

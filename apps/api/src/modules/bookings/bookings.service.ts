@@ -3,6 +3,7 @@ import { AppError } from '../../shared/errors/app-error.js';
 import { ERROR_CODES } from '../../shared/errors/error-codes.js';
 import {
   getWeekRangeUtc,
+  formatClockMinutes,
   isHalfHour,
   isWithinWorkingHours,
   minutesBetween,
@@ -104,10 +105,18 @@ export class BookingsService {
       );
     }
 
-    if (!isWithinWorkingHours(startAt, endAt, env.OFFICE_TIMEZONE)) {
+    if (
+      !isWithinWorkingHours(
+        startAt,
+        endAt,
+        env.OFFICE_TIMEZONE,
+        room.workStartMinutes,
+        room.workEndMinutes,
+      )
+    ) {
       throw new AppError(
         'OUTSIDE_WORKING_HOURS',
-        'Бронювання доступне з 09:00 до 19:00 за Europe/Kyiv',
+        `Бронювання доступне з ${formatClockMinutes(room.workStartMinutes)} до ${formatClockMinutes(room.workEndMinutes)} за ${env.OFFICE_TIMEZONE}`,
         400,
       );
     }

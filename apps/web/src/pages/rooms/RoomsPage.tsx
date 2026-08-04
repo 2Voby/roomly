@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { Spinner } from '../../components/ui/Spinner';
 import { useRooms } from '../../features/rooms/hooks/use-rooms';
+import { formatClockMinutes } from '../../lib/dates';
 
 const roomColors = ['blue', 'purple', 'lime', 'yellow', 'cyan', 'coral'];
 
@@ -21,6 +22,12 @@ export function RoomsPage() {
       return true;
     });
   }, [capacity, rooms.data]);
+
+  function openSchedule(roomId: string, action?: 'book') {
+    const params = new URLSearchParams({ roomId });
+    if (action) params.set('action', action);
+    navigate(`/schedule?${params.toString()}`);
+  }
 
   if (rooms.isPending) {
     return (
@@ -75,14 +82,18 @@ export function RoomsPage() {
                 <p>
                   до {room.capacity} людей · поверх {room.floor}
                 </p>
+                <span className="room-working-hours">
+                  Години: {formatClockMinutes(room.workStartMinutes)}–
+                  {formatClockMinutes(room.workEndMinutes)} · Europe/Kyiv
+                </span>
                 <span className="room-availability">
                   <i /> Доступна для бронювання
                 </span>
                 <div className="room-card-actions">
-                  <Button variant="secondary" onClick={() => navigate('/schedule')}>
+                  <Button variant="secondary" onClick={() => openSchedule(room.id)}>
                     Переглянути розклад
                   </Button>
-                  <Button onClick={() => navigate('/schedule')}>Забронювати</Button>
+                  <Button onClick={() => openSchedule(room.id, 'book')}>Забронювати</Button>
                 </div>
               </div>
             </article>

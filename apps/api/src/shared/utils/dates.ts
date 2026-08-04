@@ -16,7 +16,13 @@ export function isHalfHour(date: Date, timezone: string): boolean {
   return local.getSeconds() === 0 && local.getMilliseconds() === 0 && local.getMinutes() % 30 === 0;
 }
 
-export function isWithinWorkingHours(start: Date, end: Date, timezone: string): boolean {
+export function isWithinWorkingHours(
+  start: Date,
+  end: Date,
+  timezone: string,
+  workStartMinutes = WORKDAY_START_MINUTES,
+  workEndMinutes = WORKDAY_END_MINUTES,
+): boolean {
   const localStart = toZonedTime(start, timezone);
   const localEnd = toZonedTime(end, timezone);
   const startMinutes = localStart.getHours() * 60 + localStart.getMinutes();
@@ -24,9 +30,13 @@ export function isWithinWorkingHours(start: Date, end: Date, timezone: string): 
 
   return (
     isSameDay(localStart, localEnd) &&
-    startMinutes >= WORKDAY_START_MINUTES &&
-    endMinutes <= WORKDAY_END_MINUTES
+    startMinutes >= workStartMinutes &&
+    endMinutes <= workEndMinutes
   );
+}
+
+export function formatClockMinutes(minutes: number): string {
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 }
 
 export function minutesBetween(start: Date, end: Date): number {

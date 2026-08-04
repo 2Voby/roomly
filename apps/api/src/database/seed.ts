@@ -6,12 +6,54 @@ import { env } from '../config/env.js';
 import { prisma } from './prisma.js';
 
 const rooms = [
-  { id: '10000000-0000-4000-8000-000000000001', name: 'Акваріум', floor: 1, capacity: 8 },
-  { id: '10000000-0000-4000-8000-000000000002', name: 'Марс', floor: 1, capacity: 6 },
-  { id: '10000000-0000-4000-8000-000000000003', name: 'Гагарін', floor: 2, capacity: 10 },
-  { id: '10000000-0000-4000-8000-000000000004', name: 'Орбіта', floor: 2, capacity: 12 },
-  { id: '10000000-0000-4000-8000-000000000005', name: 'Атлас', floor: 3, capacity: 4 },
-  { id: '10000000-0000-4000-8000-000000000006', name: 'Комета', floor: 3, capacity: 6 },
+  {
+    id: '10000000-0000-4000-8000-000000000001',
+    name: 'Акваріум',
+    floor: 1,
+    capacity: 8,
+    workStartMinutes: 540,
+    workEndMinutes: 1140,
+  },
+  {
+    id: '10000000-0000-4000-8000-000000000002',
+    name: 'Марс',
+    floor: 1,
+    capacity: 6,
+    workStartMinutes: 540,
+    workEndMinutes: 1140,
+  },
+  {
+    id: '10000000-0000-4000-8000-000000000003',
+    name: 'Гагарін',
+    floor: 2,
+    capacity: 10,
+    workStartMinutes: 540,
+    workEndMinutes: 1140,
+  },
+  {
+    id: '10000000-0000-4000-8000-000000000004',
+    name: 'Орбіта',
+    floor: 2,
+    capacity: 12,
+    workStartMinutes: 540,
+    workEndMinutes: 1140,
+  },
+  {
+    id: '10000000-0000-4000-8000-000000000005',
+    name: 'Атлас',
+    floor: 3,
+    capacity: 4,
+    workStartMinutes: 540,
+    workEndMinutes: 1140,
+  },
+  {
+    id: '10000000-0000-4000-8000-000000000006',
+    name: 'Комета',
+    floor: 3,
+    capacity: 6,
+    workStartMinutes: 540,
+    workEndMinutes: 1140,
+  },
 ];
 
 const users = [

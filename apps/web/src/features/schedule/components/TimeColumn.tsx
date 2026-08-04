@@ -1,21 +1,27 @@
-import {
-  CALENDAR_END_MINUTES,
-  CALENDAR_SLOT_MINUTES,
-  CALENDAR_START_MINUTES,
-} from '../../../lib/dates';
+import { CALENDAR_SLOT_MINUTES } from '../../../lib/dates';
 
-export function TimeColumn() {
-  const labels = Array.from(
-    { length: (CALENDAR_END_MINUTES - CALENDAR_START_MINUTES) / CALENDAR_SLOT_MINUTES + 1 },
-    (_, index) => {
-      const minutes = CALENDAR_START_MINUTES + index * CALENDAR_SLOT_MINUTES;
-      return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
-    },
-  );
+export function TimeColumn({
+  workingStartMinutes,
+  workingEndMinutes,
+}: {
+  workingStartMinutes: number;
+  workingEndMinutes: number;
+}) {
+  const slotCount = (workingEndMinutes - workingStartMinutes) / CALENDAR_SLOT_MINUTES;
+  const labels = Array.from({ length: slotCount + 1 }, (_, index) => {
+    const minutes = workingStartMinutes + index * CALENDAR_SLOT_MINUTES;
+    return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+  });
   return (
     <div className="time-column">
-      {labels.map((label) => (
-        <span key={label}>{label}</span>
+      {labels.map((label, index) => (
+        <span
+          className={`${index === 0 ? 'time-label-start' : ''} ${index === labels.length - 1 ? 'time-label-end' : ''}`}
+          key={label}
+          style={{ top: `${(index / (labels.length - 1)) * 100}%` }}
+        >
+          {label}
+        </span>
       ))}
     </div>
   );

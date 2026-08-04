@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -13,7 +14,14 @@ import { useCurrentUser } from '../../features/auth/hooks/use-auth';
 import { useRoomBookings, useRooms } from '../../features/rooms/hooks/use-rooms';
 import { CalendarLegend } from '../../features/schedule/components/CalendarLegend';
 import { WeekCalendar } from '../../features/schedule/components/WeekCalendar';
-import { formatWeekLabel, getWeekStartKey, shiftWeek } from '../../lib/dates';
+import {
+  CALENDAR_END_MINUTES,
+  CALENDAR_START_MINUTES,
+  formatClockMinutes,
+  formatWeekLabel,
+  getWeekStartKey,
+  shiftWeek,
+} from '../../lib/dates';
 import { timezoneNote } from '../../lib/timezone';
 
 interface SlotSelection {
@@ -24,6 +32,7 @@ interface SlotSelection {
 export function SchedulePage() {
   const { data: user } = useCurrentUser();
   const rooms = useRooms();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedRoomId, setSelectedRoomId] = useState<string>();
   const [weekStart, setWeekStart] = useState(getWeekStartKey());
   const [slot, setSlot] = useState<SlotSelection | null>(null);
@@ -33,12 +42,21 @@ export function SchedulePage() {
   const bookings = useRoomBookings(selectedRoomId, weekStart);
   const createBooking = useCreateBooking();
   const cancelBooking = useCancelBooking();
+  const requestedRoomId = searchParams.get('roomId');
+  const isBookingPromptVisible = searchParams.get('action') === 'book';
 
   useEffect(() => {
-    if (!selectedRoomId && rooms.data?.[0]) setSelectedRoomId(rooms.data[0].id);
-  }, [rooms.data, selectedRoomId]);
+    const roomFromQuery = rooms.data?.find((room) => room.id === requestedRoomId);
+    if (roomFromQuery && roomFromQuery.id !== selectedRoomId) {
+      setSelectedRoomId(roomFromQuery.id);
+    } else if (!selectedRoomId && rooms.data?.[0]) {
+      setSelectedRoomId(rooms.data[0].id);
+    }
+  }, [rooms.data, requestedRoomId, selectedRoomId]);
 
   const selectedRoom = rooms.data?.find((room) => room.id === selectedRoomId);
+  const workingStartMinutes = selectedRoom?.workStartMinutes ?? CALENDAR_START_MINUTES;
+  const workingEndMinutes = selectedRoom?.workEndMinutes ?? CALENDAR_END_MINUTES;
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -76,6 +94,20 @@ export function SchedulePage() {
     });
   }
 
+  function selectRoom(roomId: string) {
+    setSelectedRoomId(roomId);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('roomId', roomId);
+    nextParams.delete('action');
+    setSearchParams(nextParams, { replace: true });
+  }
+
+  function dismissBookingPrompt() {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('action');
+    setSearchParams(nextParams, { replace: true });
+  }
+
   if (rooms.isPending)
     return (
       <div className="page-center">
@@ -109,19 +141,24 @@ export function SchedulePage() {
         <span className="timezone-note">◉ {timezoneNote()}</span>
       </div>
       <section className="schedule-controls">
-        <label className="room-select">
-          <span className="sr-only">Переговорна кімната</span>
-          <select
-            value={selectedRoomId}
-            onChange={(event) => setSelectedRoomId(event.target.value)}
-          >
-            {rooms.data.map((room) => (
-              <option value={room.id} key={room.id}>
-                {room.name} · поверх {room.floor} · до {room.capacity} людей
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="room-control">
+          <label className="room-select">
+            <span className="sr-only">Переговорна кімната</span>
+            <select value={selectedRoomId} onChange={(event) => selectRoom(event.target.value)}>
+              {rooms.data.map((room) => (
+                <option value={room.id} key={room.id}>
+                  {room.name} · поверх {room.floor} · до {room.capacity} людей ·{' '}
+                  {formatClockMinutes(room.workStartMinutes)}–
+                  {formatClockMinutes(room.workEndMinutes)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <span className="room-hours-note">
+            Години кімнати: {formatClockMinutes(workingStartMinutes)}–
+            {formatClockMinutes(workingEndMinutes)} · Europe/Kyiv
+          </span>
+        </div>
         <div className="week-controls">
           <Button
             variant="secondary"
@@ -143,6 +180,18 @@ export function SchedulePage() {
           </Button>
         </div>
       </section>
+      {isBookingPromptVisible ? (
+        <div className="booking-prompt" role="status">
+          <span className="booking-prompt-icon">+</span>
+          <span>
+            <strong>Кімнату обрано</strong>
+            Виберіть вільний час у календарі, щоб створити бронювання
+          </span>
+          <button type="button" aria-label="Закрити підказку" onClick={dismissBookingPrompt}>
+            ×
+          </button>
+        </div>
+      ) : null}
       <CalendarLegend />
       {bookings.isPending ? (
         <div className="calendar-loading">
@@ -155,24 +204,24 @@ export function SchedulePage() {
           weekStart={weekStart}
           bookings={bookings.data ?? []}
           currentUserId={user?.id ?? ''}
+          workingStartMinutes={workingStartMinutes}
+          workingEndMinutes={workingEndMinutes}
           onSlotSelect={(startAt, endAt) => {
             createBooking.reset();
+            dismissBookingPrompt();
             setSlot({ startAt, endAt });
           }}
           onBookingClick={setSelectedBooking}
         />
       )}
-      <div className="schedule-footnote">
-        <span>Робочі години: 09:00–19:00 за Europe/Kyiv</span>
-        <span>Крок календаря: 30 хвилин</span>
-      </div>
-
       {slot && selectedRoom ? (
         <Modal title="Нове бронювання" onClose={() => setSlot(null)}>
           <BookingForm
             startAt={slot.startAt}
             endAt={slot.endAt}
             roomName={selectedRoom.name}
+            workingStartMinutes={workingStartMinutes}
+            workingEndMinutes={workingEndMinutes}
             currentUserEmail={user?.email ?? ''}
             bookings={bookings.data ?? []}
             isPending={createBooking.isPending}

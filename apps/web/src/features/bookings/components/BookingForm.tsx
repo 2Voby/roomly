@@ -7,7 +7,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { ApiError } from '../../../lib/api-client';
-import { getBookingDurationOptions } from '../../../lib/dates';
+import { formatClockMinutes, getBookingDurationOptions } from '../../../lib/dates';
 import { OFFICE_TIMEZONE } from '../../../lib/timezone';
 import { useUserSearch } from '../../users/hooks/use-user-search';
 import type { DirectoryUser } from '../../users/types';
@@ -28,6 +28,8 @@ export function BookingForm({
   startAt,
   endAt,
   roomName,
+  workingStartMinutes,
+  workingEndMinutes,
   currentUserEmail,
   bookings,
   isPending,
@@ -38,6 +40,8 @@ export function BookingForm({
   startAt: Date;
   endAt: Date;
   roomName: string;
+  workingStartMinutes: number;
+  workingEndMinutes: number;
   currentUserEmail: string;
   bookings: Booking[];
   isPending: boolean;
@@ -78,10 +82,17 @@ export function BookingForm({
     selectedStartAt && selectedEndAt && selectedStartAt < selectedEndAt
       ? differenceInMinutes(selectedEndAt, selectedStartAt)
       : null;
-  const durationOptions = getBookingDurationOptions(previewStartAt);
+  const durationOptions = getBookingDurationOptions(previewStartAt, workingEndMinutes);
   const conflict = findBookingConflict(bookings, selectedStartAt, selectedEndAt);
+  const selectedStartMinutes = timeToMinutes(selectedStartTime);
+  const selectedEndMinutes = timeToMinutes(selectedEndTime);
   const hasInvalidStartTime = Boolean(
     selectedStartTime && selectedEndTime && timeToMinutes(selectedStartTime) === null,
+  );
+  const outsideWorkingHours = Boolean(
+    selectedStartMinutes !== null &&
+    selectedEndMinutes !== null &&
+    (selectedStartMinutes < workingStartMinutes || selectedEndMinutes > workingEndMinutes),
   );
   const normalizedCurrentUserEmail = currentUserEmail.trim().toLowerCase();
 
@@ -129,6 +140,12 @@ export function BookingForm({
       setError('endTime', { type: 'conflict', message });
       return;
     }
+    if (outsideWorkingHours) {
+      const message = `Оберіть час з ${formatClockMinutes(workingStartMinutes)} до ${formatClockMinutes(workingEndMinutes)}`;
+      setError('startTime', { type: 'working-hours', message });
+      setError('endTime', { type: 'working-hours', message });
+      return;
+    }
     if (!selectedStartAt || !selectedEndAt) return;
     if (error instanceof ApiError && error.fields) {
       for (const [field, message] of Object.entries(error.fields))
@@ -151,7 +168,10 @@ export function BookingForm({
           {previewStartAt.toLocaleString('uk-UA', { dateStyle: 'medium', timeStyle: 'short' })} —{' '}
           {previewEndAt.toLocaleTimeString('uk-UA', { timeStyle: 'short' })}
         </strong>
-        <small>Часова зона: Europe/Kyiv</small>
+        <small>
+          Години кімнати: {formatClockMinutes(workingStartMinutes)}–
+          {formatClockMinutes(workingEndMinutes)} за Europe/Kyiv
+        </small>
       </div>
 
       <div className="time-range-field">
@@ -175,7 +195,7 @@ export function BookingForm({
           />
         </div>
         <div
-          className={`time-range-validation-slot ${conflict || hasInvalidStartTime ? 'time-range-validation-slot-visible' : ''}`}
+          className={`time-range-validation-slot ${conflict || hasInvalidStartTime || outsideWorkingHours ? 'time-range-validation-slot-visible' : ''}`}
           aria-live="polite"
         >
           {conflict ? (
@@ -187,6 +207,12 @@ export function BookingForm({
           ) : null}
           {hasInvalidStartTime ? (
             <p className="field-error">Оберіть коректний час початку</p>
+          ) : null}
+          {outsideWorkingHours ? (
+            <p className="field-error">
+              Оберіть час з {formatClockMinutes(workingStartMinutes)} до{' '}
+              {formatClockMinutes(workingEndMinutes)}
+            </p>
           ) : null}
         </div>
       </div>
@@ -282,7 +308,7 @@ export function BookingForm({
         <Button type="button" variant="ghost" onClick={onCancel}>
           Скасувати
         </Button>
-        <Button type="submit" disabled={isPending || Boolean(conflict)}>
+        <Button type="submit" disabled={isPending || Boolean(conflict) || outsideWorkingHours}>
           {isPending ? 'Бронюємо…' : 'Забронювати'}
         </Button>
       </div>

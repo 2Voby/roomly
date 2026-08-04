@@ -40,6 +40,8 @@ export interface RoomDto {
   name: string;
   floor: number;
   capacity: number;
+  workStartMinutes: number;
+  workEndMinutes: number;
   createdAt: string;
 }
 

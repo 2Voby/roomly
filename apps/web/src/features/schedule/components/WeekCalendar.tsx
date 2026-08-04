@@ -10,12 +10,16 @@ export function WeekCalendar({
   weekStart,
   bookings,
   currentUserId,
+  workingStartMinutes,
+  workingEndMinutes,
   onSlotSelect,
   onBookingClick,
 }: {
   weekStart: string;
   bookings: Booking[];
   currentUserId: string;
+  workingStartMinutes: number;
+  workingEndMinutes: number;
   onSlotSelect: (startAt: Date, endAt: Date) => void;
   onBookingClick: (booking: Booking) => void;
 }) {
@@ -32,7 +36,10 @@ export function WeekCalendar({
           ))}
         </div>
         <div className="calendar-board">
-          <TimeColumn />
+          <TimeColumn
+            workingStartMinutes={workingStartMinutes}
+            workingEndMinutes={workingEndMinutes}
+          />
           <div className="calendar-days">
             {days.map((day) => (
               <DayColumn
@@ -44,6 +51,8 @@ export function WeekCalendar({
                     day,
                 )}
                 currentUserId={currentUserId}
+                workingStartMinutes={workingStartMinutes}
+                workingEndMinutes={workingEndMinutes}
                 onSlotSelect={onSlotSelect}
                 onBookingClick={onBookingClick}
               />

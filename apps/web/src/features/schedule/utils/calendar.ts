@@ -1,14 +1,11 @@
 import type { Booking } from '../../bookings/types';
 import {
   BOOKING_MAX_DURATION_MINUTES,
-  CALENDAR_END_MINUTES,
   CALENDAR_SLOT_MINUTES,
-  CALENDAR_START_MINUTES,
   minutesFromOfficeStart,
   officeDateTimeToUtc,
 } from '../../../lib/dates';
 
-export const SLOT_COUNT = (CALENDAR_END_MINUTES - CALENDAR_START_MINUTES) / CALENDAR_SLOT_MINUTES;
 export const MAX_BOOKING_SLOTS = BOOKING_MAX_DURATION_MINUTES / CALENDAR_SLOT_MINUTES;
 
 export interface BookingColor {
@@ -33,8 +30,12 @@ export function bookingColorForUser(userId: string): BookingColor {
   return BOOKING_COLORS[Math.abs(hash) % BOOKING_COLORS.length]!;
 }
 
-export function bookingStyle(booking: Booking): { top: number; height: number } {
-  const top = minutesFromOfficeStart(new Date(booking.startAt)) / CALENDAR_SLOT_MINUTES;
+export function bookingStyle(
+  booking: Booking,
+  workingStartMinutes: number,
+): { top: number; height: number } {
+  const top =
+    minutesFromOfficeStart(new Date(booking.startAt), workingStartMinutes) / CALENDAR_SLOT_MINUTES;
   const duration =
     (new Date(booking.endAt).getTime() - new Date(booking.startAt).getTime()) / 60_000;
   return { top, height: Math.max(1, duration / CALENDAR_SLOT_MINUTES) };
@@ -46,8 +47,8 @@ export function isSlotBooked(range: { startAt: Date; endAt: Date }, bookings: Bo
   );
 }
 
-export function slotRange(dayKey: string, slotIndex: number) {
-  const startMinutes = CALENDAR_START_MINUTES + slotIndex * CALENDAR_SLOT_MINUTES;
+export function slotRange(dayKey: string, slotIndex: number, workingStartMinutes: number) {
+  const startMinutes = workingStartMinutes + slotIndex * CALENDAR_SLOT_MINUTES;
   return {
     startAt: officeDateTimeToUtc(dayKey, startMinutes),
     endAt: officeDateTimeToUtc(dayKey, startMinutes + CALENDAR_SLOT_MINUTES),

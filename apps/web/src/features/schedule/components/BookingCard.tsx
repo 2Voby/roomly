@@ -2,24 +2,30 @@ import { formatInTimeZone } from 'date-fns-tz';
 import type { CSSProperties } from 'react';
 
 import type { Booking } from '../../bookings/types';
+import { CALENDAR_SLOT_MINUTES } from '../../../lib/dates';
 import { OFFICE_TIMEZONE } from '../../../lib/timezone';
 import { bookingColorForUser, bookingStyle } from '../utils/calendar';
 
 export function BookingCard({
   booking,
   isMine,
+  workingStartMinutes,
+  workingEndMinutes,
   onClick,
 }: {
   booking: Booking;
   isMine: boolean;
+  workingStartMinutes: number;
+  workingEndMinutes: number;
   onClick: () => void;
 }) {
-  const style = bookingStyle(booking);
+  const style = bookingStyle(booking, workingStartMinutes);
   const color = bookingColorForUser(booking.userId);
   const isCompact = style.height < 2;
+  const slotCount = (workingEndMinutes - workingStartMinutes) / CALENDAR_SLOT_MINUTES;
   const cardStyle = {
-    top: `${style.top * 5}%`,
-    height: `calc(${style.height * 5}% - 2px)`,
+    top: `${(style.top / slotCount) * 100}%`,
+    height: `calc(${(style.height / slotCount) * 100}% - 2px)`,
     '--booking-background': color.background,
     '--booking-border': color.border,
     '--booking-accent': color.accent,
