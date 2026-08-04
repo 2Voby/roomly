@@ -1,7 +1,7 @@
 import { Button } from '../../../components/ui/Button';
 import {
   OFFICE_TIMEZONE,
-  formatUserDateTime,
+  formatUserDate,
   formatUserTime,
   getUserTimezone,
 } from '../../../lib/timezone';
@@ -28,6 +28,10 @@ export function BookingDetails({
     duration >= 60
       ? `${Math.floor(duration / 60)} год${duration % 60 ? ` ${duration % 60} хв` : ''}`
       : `${duration} хв`;
+  const startAt = new Date(booking.startAt);
+  const endAt = new Date(booking.endAt);
+  const userTimezone = getUserTimezone();
+
   return (
     <div className="booking-details">
       <p className="detail-title">{booking.title}</p>
@@ -40,13 +44,23 @@ export function BookingDetails({
           </small>
         </span>
       </div>
-      <p>
-        {formatUserDateTime(new Date(booking.startAt))} — {formatUserTime(new Date(booking.endAt))}
+      <div className="booking-timezone-badge">
+        <span className="booking-timezone-icon" aria-hidden="true">
+          ◉
+        </span>
+        <span>
+          <small>Часова зона перегляду</small>
+          <strong>{userTimezone}</strong>
+        </span>
+        <span className="booking-office-timezone">Офіс · {OFFICE_TIMEZONE}</span>
+      </div>
+      <p className="booking-date-time">
+        <span>{formatUserDate(startAt)},</span>
+        <strong>
+          {formatUserTime(startAt)} — {formatUserTime(endAt)}
+        </strong>
       </p>
-      <p>
-        Тривалість: {durationLabel} · часова зона {getUserTimezone()}
-        {getUserTimezone() !== OFFICE_TIMEZONE ? ` · офісний час ${OFFICE_TIMEZONE}` : ''}
-      </p>
+      <p className="booking-duration">Тривалість: {durationLabel}</p>
       <div className="booking-people-list">
         <div className="booking-person booking-person-organizer">
           <span className="booking-person-avatar">

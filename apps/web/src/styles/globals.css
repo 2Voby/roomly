@@ -1030,6 +1030,68 @@ a {
   color: #647188;
   font-size: 14px;
 }
+.booking-timezone-badge {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  color: #31527d;
+  background: #edf5ff;
+  border: 1px solid #d9e9fb;
+  border-radius: 11px;
+}
+.booking-timezone-icon {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  flex: 0 0 25px;
+  place-items: center;
+  color: #2563eb;
+  background: #dbeafe;
+  border-radius: 8px;
+  font-size: 12px;
+}
+.booking-timezone-badge > span:nth-child(2) {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+.booking-timezone-badge small {
+  color: #7790ad;
+  font-size: 10px;
+  font-weight: 650;
+}
+.booking-timezone-badge strong {
+  overflow: hidden;
+  color: #23466f;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.booking-office-timezone {
+  margin-left: auto;
+  color: #6783a4;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+.booking-date-time {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 5px;
+}
+.booking-date-time strong {
+  color: #1b2b48;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.booking-duration {
+  color: #7a879b !important;
+  font-size: 12px !important;
+}
 .booking-details .detail-title {
   color: #1c2944;
 }
