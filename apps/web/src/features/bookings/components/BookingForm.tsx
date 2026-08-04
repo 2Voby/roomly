@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { addMinutes, differenceInMinutes } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
@@ -11,6 +11,7 @@ import { getBookingDurationOptions } from '../../../lib/dates';
 import { OFFICE_TIMEZONE } from '../../../lib/timezone';
 import { useUserSearch } from '../../users/hooks/use-user-search';
 import type { DirectoryUser } from '../../users/types';
+import { TimeInput } from './TimeInput';
 import { findBookingConflict } from '../utils/booking-conflict';
 import { formatOfficeTime, officeDateTimeForTime, timeToMinutes } from '../utils/booking-time';
 import { bookingFormSchema, type BookingFormValues } from '../schemas/booking-schema';
@@ -51,6 +52,7 @@ export function BookingForm({
   const [participants, setParticipants] = useState<DirectoryUser[]>([]);
   const userSearch = useUserSearch(participantQuery);
   const {
+    control,
     register,
     handleSubmit,
     setError,
@@ -151,22 +153,22 @@ export function BookingForm({
 
       <div className="time-range-field">
         <div className="time-range-inputs">
-          <Input
-            label="Початок"
-            type="time"
-            step={1800}
-            error={errors.startTime?.message}
-            {...register('startTime')}
+          <Controller
+            control={control}
+            name="startTime"
+            render={({ field }) => (
+              <TimeInput label="Початок" error={errors.startTime?.message} {...field} />
+            )}
           />
           <span className="time-range-arrow" aria-hidden="true">
             →
           </span>
-          <Input
-            label="Кінець"
-            type="time"
-            step={1800}
-            error={errors.endTime?.message}
-            {...register('endTime')}
+          <Controller
+            control={control}
+            name="endTime"
+            render={({ field }) => (
+              <TimeInput label="Кінець" error={errors.endTime?.message} {...field} />
+            )}
           />
         </div>
         {conflict ? (
