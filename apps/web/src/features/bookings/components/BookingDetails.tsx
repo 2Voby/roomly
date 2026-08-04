@@ -44,23 +44,19 @@ export function BookingDetails({
           </small>
         </span>
       </div>
-      <div className="booking-timezone-badge">
-        <span className="booking-timezone-icon" aria-hidden="true">
-          ◉
-        </span>
-        <span>
-          <small>Часова зона перегляду</small>
-          <strong>{userTimezone}</strong>
-        </span>
-        <span className="booking-office-timezone">Офіс · {OFFICE_TIMEZONE}</span>
+      <div className="booking-schedule-summary">
+        <p className="booking-date-time">
+          <span>{formatUserDate(startAt)},</span>
+          <strong>
+            {formatUserTime(startAt)} — {formatUserTime(endAt)}
+          </strong>
+        </p>
+        <div className="booking-schedule-meta">
+          <strong className="booking-user-timezone">{userTimezone}</strong>
+          <span className="booking-office-timezone">Офіс · {OFFICE_TIMEZONE}</span>
+          <span className="booking-duration">Тривалість: {durationLabel}</span>
+        </div>
       </div>
-      <p className="booking-date-time">
-        <span>{formatUserDate(startAt)},</span>
-        <strong>
-          {formatUserTime(startAt)} — {formatUserTime(endAt)}
-        </strong>
-      </p>
-      <p className="booking-duration">Тривалість: {durationLabel}</p>
       <div className="booking-people-list">
         <div className="booking-person booking-person-organizer">
           <span className="booking-person-avatar">
