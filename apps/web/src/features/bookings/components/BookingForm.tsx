@@ -7,7 +7,11 @@ import { Controller, useForm } from 'react-hook-form';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { ApiError } from '../../../lib/api-client';
-import { formatClockMinutes, getBookingDurationOptions } from '../../../lib/dates';
+import {
+  BOOKING_MAX_DURATION_MINUTES,
+  formatClockMinutes,
+  getBookingDurationOptions,
+} from '../../../lib/dates';
 import { OFFICE_TIMEZONE, formatUserDateTime, formatUserTime } from '../../../lib/timezone';
 import { useUserSearch } from '../../users/hooks/use-user-search';
 import type { DirectoryUser } from '../../users/types';
@@ -84,6 +88,7 @@ export function BookingForm({
     selectedStartAt && selectedEndAt && selectedStartAt < selectedEndAt
       ? differenceInMinutes(selectedEndAt, selectedStartAt)
       : null;
+  const exceedsMaximumDuration = duration !== null && duration > BOOKING_MAX_DURATION_MINUTES;
   const durationOptions = getBookingDurationOptions(previewStartAt, workingEndMinutes);
   const conflict = findBookingConflict(bookings, selectedStartAt, selectedEndAt);
   const selectedStartMinutes = timeToMinutes(selectedStartTime);
@@ -98,6 +103,15 @@ export function BookingForm({
   );
   const normalizedCurrentUserEmail = currentUserEmail.trim().toLowerCase();
   const exceedsCapacity = participants.length + 1 > roomCapacity;
+  const timeRangeError = conflict
+    ? `Не можна обрати цей час — тут уже є зустріч «${conflict.title}» (${formatOfficeTime(new Date(conflict.startAt))}–${formatOfficeTime(new Date(conflict.endAt))})`
+    : hasInvalidStartTime
+      ? 'Оберіть коректний час початку'
+      : outsideWorkingHours
+        ? `Оберіть час з ${formatClockMinutes(workingStartMinutes)} до ${formatClockMinutes(workingEndMinutes)}`
+        : exceedsMaximumDuration
+          ? 'Максимальна тривалість бронювання — 4 години'
+          : null;
 
   function setQuickDuration(minutes: number) {
     const nextEndAt = addMinutes(previewStartAt, minutes);
@@ -137,6 +151,7 @@ export function BookingForm({
   }
 
   function submit(values: BookingFormValues) {
+    if (exceedsMaximumDuration) return;
     if (conflict) {
       const message = 'Цей час недоступний: у кімнаті вже є інша зустріч';
       setError('startTime', { type: 'conflict', message });
@@ -198,23 +213,12 @@ export function BookingForm({
           />
         </div>
         <div
-          className={`time-range-validation-slot ${conflict || hasInvalidStartTime || outsideWorkingHours ? 'time-range-validation-slot-visible' : ''}`}
+          className={`time-range-validation-slot ${timeRangeError ? 'time-range-validation-slot-visible' : ''}`}
           aria-live="polite"
         >
-          {conflict ? (
-            <p className="time-range-conflict" role="alert">
-              Не можна обрати цей час — тут уже є зустріч «{conflict.title}» ({' '}
-              {formatOfficeTime(new Date(conflict.startAt))}–
-              {formatOfficeTime(new Date(conflict.endAt))})
-            </p>
-          ) : null}
-          {hasInvalidStartTime ? (
-            <p className="field-error">Оберіть коректний час початку</p>
-          ) : null}
-          {outsideWorkingHours ? (
-            <p className="field-error">
-              Оберіть час з {formatClockMinutes(workingStartMinutes)} до{' '}
-              {formatClockMinutes(workingEndMinutes)}
+          {timeRangeError ? (
+            <p className={conflict ? 'time-range-conflict' : 'field-error'} role="alert">
+              {timeRangeError}
             </p>
           ) : null}
         </div>
@@ -320,7 +324,9 @@ export function BookingForm({
         </Button>
         <Button
           type="submit"
-          disabled={isPending || Boolean(conflict) || outsideWorkingHours || exceedsCapacity}
+          disabled={
+            isPending || Boolean(timeRangeError) || exceedsMaximumDuration || exceedsCapacity
+          }
         >
           {isPending ? 'Бронюємо…' : 'Забронювати'}
         </Button>
