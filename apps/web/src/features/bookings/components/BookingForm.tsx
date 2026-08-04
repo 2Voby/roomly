@@ -12,7 +12,7 @@ import {
   formatClockMinutes,
   getBookingDurationOptions,
 } from '../../../lib/dates';
-import { OFFICE_TIMEZONE, formatUserDateTime, formatUserTime } from '../../../lib/timezone';
+import { OFFICE_TIMEZONE, formatUserDate, formatUserTime } from '../../../lib/timezone';
 import { useUserSearch } from '../../users/hooks/use-user-search';
 import type { DirectoryUser } from '../../users/types';
 import { TimeInput } from './TimeInput';
@@ -182,11 +182,23 @@ export function BookingForm({
   return (
     <form className="booking-form" onSubmit={handleSubmit(submit)} noValidate>
       <div className="booking-summary">
-        <span>{roomName}</span>
-        <strong>
-          {formatUserDateTime(previewStartAt)} — {formatUserTime(previewEndAt)}
-        </strong>
-        <small>
+        <div className="booking-summary-room">
+          <span className="booking-summary-room-mark" aria-hidden="true">
+            ⌂
+          </span>
+          <span className="booking-summary-room-copy">
+            <small>Переговорна кімната</small>
+            <strong>{roomName}</strong>
+          </span>
+        </div>
+        <p className="booking-summary-time">
+          <span>{formatUserDate(previewStartAt)},</span>
+          <strong>
+            {formatUserTime(previewStartAt)} — {formatUserTime(previewEndAt)}
+          </strong>
+        </p>
+        <small className="booking-summary-hours">
+          <span aria-hidden="true">◷</span>
           Години кімнати: {formatClockMinutes(workingStartMinutes)}–
           {formatClockMinutes(workingEndMinutes)} за Europe/Kyiv
         </small>

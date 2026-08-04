@@ -749,17 +749,83 @@ a {
 }
 .booking-summary {
   display: grid;
-  gap: 5px;
-  padding: 12px;
-  background: #f6f9fe;
-  border: 1px solid #e1e9f6;
-  border-radius: 7px;
-  color: #5f6b7f;
-  font-size: 12px;
+  gap: 11px;
+  padding: 14px 15px;
+  background: linear-gradient(135deg, #f7faff 0%, #ffffff 100%);
+  border: 1px solid #dfe9f6;
+  border-left: 3px solid #3b82f6;
+  border-radius: 13px;
+  box-shadow: 0 8px 22px rgba(55, 88, 133, 0.07);
 }
-.booking-summary strong {
-  color: #273450;
-  font-size: 13px;
+.booking-summary-room {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.booking-summary-room-mark {
+  display: grid;
+  width: 31px;
+  height: 31px;
+  flex: 0 0 31px;
+  place-items: center;
+  color: #2563eb;
+  background: #dbeafe;
+  border-radius: 9px;
+  font-size: 16px;
+  font-weight: 800;
+}
+.booking-summary-room-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.booking-summary-room-copy small {
+  color: #7890ad;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.booking-summary-room-copy strong {
+  overflow: hidden;
+  color: #1c2944;
+  font-size: 15px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.booking-summary-time {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+}
+.booking-summary-time > span {
+  color: #647188;
+  font-size: 14px;
+  font-weight: 650;
+}
+.booking-summary-time strong {
+  color: #182238;
+  font-size: 18px;
+  font-weight: 850;
+  letter-spacing: -0.025em;
+}
+.booking-summary-hours {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-top: 9px;
+  color: #7a879b;
+  border-top: 1px solid #e6edf7;
+  font-size: 11px;
+  font-weight: 650;
+}
+.booking-summary-hours > span {
+  color: #6b91c5;
+  font-size: 14px;
+  line-height: 1;
 }
 .booking-summary small {
   color: #7a879b;
