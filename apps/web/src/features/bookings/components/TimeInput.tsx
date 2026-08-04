@@ -49,7 +49,10 @@ export const TimeInput = forwardRef<
           maxLength={5}
           placeholder="12:00"
           pattern="[0-9]{2}:[0-9]{2}"
-          onChange={(event) => onChange(normalizeTypedTime(event.target.value))}
+          onChange={(event) => {
+            const formatted = normalizeTypedTime(event.target.value);
+            onChange(formatted.length === 5 ? roundToHalfHour(formatted) : formatted);
+          }}
           onBlur={handleBlur}
         />
         <span className="time-input-suffix">30 хв</span>
