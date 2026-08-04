@@ -136,13 +136,17 @@ existing.startAt < new.endAt && existing.endAt > new.startAt
 
 ## Seed
 
-Seed створює або оновлює 6 кімнат, 2 користувачів і 6 бронювань на поточний/наступний тиждень. Повторний запуск не створює дублікати.
+Seed створює або оновлює 6 кімнат, 6 користувачів і 6 бронювань на поточний/наступний тиждень. Повторний запуск не створює дублікати.
 
-Тестові користувачі:
+Тестові користувачі (усі мають пароль `roomly123`):
 
 ```text
-olena@example.com / roomly123
-ivan@example.com  / roomly123
+Олена Коваль          · olena@example.com      / roomly123
+Іван Петренко         · ivan@example.com       / roomly123
+Владислав Герасимчук  · vladyslav@example.com  / roomly123
+Марія Бондар          · maria@example.com      / roomly123
+Андрій Шевченко       · andrii@example.com     / roomly123
+Софія Мельник         · sofia@example.com      / roomly123
 ```
 
 ## Тести та перевірки

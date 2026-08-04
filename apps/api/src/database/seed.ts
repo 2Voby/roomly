@@ -59,6 +59,26 @@ const rooms = [
 const users = [
   { id: '20000000-0000-4000-8000-000000000001', name: 'Олена Коваль', email: 'olena@example.com' },
   { id: '20000000-0000-4000-8000-000000000002', name: 'Іван Петренко', email: 'ivan@example.com' },
+  {
+    id: '20000000-0000-4000-8000-000000000003',
+    name: 'Владислав Герасимчук',
+    email: 'vladyslav@example.com',
+  },
+  {
+    id: '20000000-0000-4000-8000-000000000004',
+    name: 'Марія Бондар',
+    email: 'maria@example.com',
+  },
+  {
+    id: '20000000-0000-4000-8000-000000000005',
+    name: 'Андрій Шевченко',
+    email: 'andrii@example.com',
+  },
+  {
+    id: '20000000-0000-4000-8000-000000000006',
+    name: 'Софія Мельник',
+    email: 'sofia@example.com',
+  },
 ];
 
 function atOfficeTime(date: Date, hours: number, minutes: number): Date {
