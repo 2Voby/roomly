@@ -6,13 +6,17 @@ function normalizeTypedTime(value: string) {
   return `${digits.slice(0, 2)}:${digits.slice(2)}`;
 }
 
-function roundToHalfHour(value: string) {
+function roundToHalfHour(value: string, rounding: 'nearest' | 'up') {
   const match = /^(\d{2}):(\d{2})$/.exec(value);
   if (!match) return value;
   const hours = Number(match[1]);
   const minutes = Number(match[2]);
   if (hours > 23 || minutes > 59) return value;
-  const rounded = Math.min(Math.round((hours * 60 + minutes) / 30) * 30, 23 * 60 + 30);
+  const roundedMinutes =
+    rounding === 'up'
+      ? Math.ceil((hours * 60 + minutes) / 30) * 30
+      : Math.round((hours * 60 + minutes) / 30) * 30;
+  const rounded = Math.min(roundedMinutes, 23 * 60 + 30);
   return `${String(Math.floor(rounded / 60)).padStart(2, '0')}:${String(rounded % 60).padStart(2, '0')}`;
 }
 
@@ -25,10 +29,14 @@ export const TimeInput = forwardRef<
     name: string;
     onChange: (value: string) => void;
     onBlur: (event: FocusEvent<HTMLInputElement>) => void;
+    rounding?: 'nearest' | 'up';
   } & Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'onBlur'>
->(function TimeInput({ label, error, value, name, onChange, onBlur, ...props }, ref) {
+>(function TimeInput(
+  { label, error, value, name, onChange, onBlur, rounding = 'nearest', ...props },
+  ref,
+) {
   function handleBlur(event: FocusEvent<HTMLInputElement>) {
-    const normalized = roundToHalfHour(value);
+    const normalized = roundToHalfHour(value, rounding);
     if (normalized !== value) onChange(normalized);
     onBlur(event);
   }
@@ -51,13 +59,15 @@ export const TimeInput = forwardRef<
           pattern="[0-9]{2}:[0-9]{2}"
           onChange={(event) => {
             const formatted = normalizeTypedTime(event.target.value);
-            onChange(formatted.length === 5 ? roundToHalfHour(formatted) : formatted);
+            onChange(formatted.length === 5 ? roundToHalfHour(formatted, rounding) : formatted);
           }}
           onBlur={handleBlur}
         />
         <span className="time-input-suffix">30 хв</span>
       </span>
-      {error ? <span className="field-error">{error}</span> : null}
+      <span className={`field-error time-input-error ${error ? '' : 'time-input-error-empty'}`}>
+        {error || '\u00a0'}
+      </span>
     </label>
   );
 });

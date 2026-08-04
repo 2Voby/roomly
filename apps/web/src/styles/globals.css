@@ -2177,6 +2177,22 @@ body {
   pointer-events: none;
   transform: translateY(-50%);
 }
+.time-input-error {
+  display: block;
+  min-height: 15px;
+}
+.time-input-error-empty {
+  visibility: hidden;
+}
+.time-range-validation-slot {
+  height: 50px;
+  overflow: visible;
+}
+@media (max-width: 560px) {
+  .time-range-validation-slot {
+    height: 72px;
+  }
+}
 
 @media (max-width: 900px) {
   .header-inner {

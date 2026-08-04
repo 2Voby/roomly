@@ -167,20 +167,22 @@ export function BookingForm({
             control={control}
             name="endTime"
             render={({ field }) => (
-              <TimeInput label="Кінець" error={errors.endTime?.message} {...field} />
+              <TimeInput label="Кінець" error={errors.endTime?.message} rounding="up" {...field} />
             )}
           />
         </div>
-        {conflict ? (
-          <p className="time-range-conflict" role="alert">
-            Не можна обрати цей час — тут уже є зустріч «{conflict.title}» ({' '}
-            {formatOfficeTime(new Date(conflict.startAt))}–
-            {formatOfficeTime(new Date(conflict.endAt))})
-          </p>
-        ) : null}
-        {selectedStartTime && selectedEndTime && timeToMinutes(selectedStartTime) === null ? (
-          <p className="field-error">Оберіть коректний час початку</p>
-        ) : null}
+        <div className="time-range-validation-slot" aria-live="polite">
+          {conflict ? (
+            <p className="time-range-conflict" role="alert">
+              Не можна обрати цей час — тут уже є зустріч «{conflict.title}» ({' '}
+              {formatOfficeTime(new Date(conflict.startAt))}–
+              {formatOfficeTime(new Date(conflict.endAt))})
+            </p>
+          ) : null}
+          {selectedStartTime && selectedEndTime && timeToMinutes(selectedStartTime) === null ? (
+            <p className="field-error">Оберіть коректний час початку</p>
+          ) : null}
+        </div>
       </div>
 
       <div className="duration-field">
