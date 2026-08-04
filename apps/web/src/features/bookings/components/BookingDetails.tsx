@@ -35,26 +35,28 @@ export function BookingDetails({
   return (
     <div className="booking-details">
       <p className="detail-title">{booking.title}</p>
-      <div className="booking-detail-room">
-        <span className="room-detail-icon">⌂</span>
-        <span>
-          <strong>{booking.roomName}</strong>
-          <small>
-            Поверх {booking.roomFloor} · до {booking.roomCapacity} людей
-          </small>
-        </span>
-      </div>
-      <div className="booking-schedule-summary">
-        <p className="booking-date-time">
-          <span>{formatUserDate(startAt)},</span>
-          <strong>
-            {formatUserTime(startAt)} — {formatUserTime(endAt)}
-          </strong>
-        </p>
-        <div className="booking-schedule-meta">
-          <strong className="booking-user-timezone">{userTimezone}</strong>
-          <span className="booking-office-timezone">Офіс · {OFFICE_TIMEZONE}</span>
-          <span className="booking-duration">Тривалість: {durationLabel}</span>
+      <div className="booking-detail-summary">
+        <div className="booking-detail-room">
+          <span className="room-detail-icon">⌂</span>
+          <span>
+            <strong>{booking.roomName}</strong>
+            <small>
+              Поверх {booking.roomFloor} · до {booking.roomCapacity} людей
+            </small>
+          </span>
+        </div>
+        <div className="booking-schedule-summary">
+          <p className="booking-date-time">
+            <span>{formatUserDate(startAt)},</span>
+            <strong>
+              {formatUserTime(startAt)} — {formatUserTime(endAt)}
+            </strong>
+          </p>
+          <div className="booking-schedule-meta">
+            <strong className="booking-user-timezone">{userTimezone}</strong>
+            <span className="booking-office-timezone">Офіс · {OFFICE_TIMEZONE}</span>
+            <span className="booking-duration">Тривалість: {durationLabel}</span>
+          </div>
         </div>
       </div>
       <div className="booking-people-list">

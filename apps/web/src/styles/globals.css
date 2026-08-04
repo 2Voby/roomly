@@ -1098,13 +1098,46 @@ a {
   color: #647188;
   font-size: 14px;
 }
-.booking-schedule-summary {
+.booking-detail-summary {
   display: grid;
-  gap: 7px;
-  padding: 12px 14px;
+  gap: 12px;
+  padding: 14px 15px;
   background: linear-gradient(135deg, #f7faff 0%, #ffffff 100%);
-  border: 1px solid #e1eaf7;
+  border: 1px solid #dfe9f6;
+  border-left: 3px solid #3b82f6;
   border-radius: 13px;
+  box-shadow: 0 8px 22px rgba(55, 88, 133, 0.07);
+}
+.booking-detail-summary .booking-detail-room {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+}
+.booking-detail-summary .booking-detail-room > span:last-child {
+  display: grid;
+  gap: 3px;
+}
+.booking-detail-summary .booking-detail-room strong {
+  color: #1c2944;
+  font-size: 15px;
+  font-weight: 800;
+}
+.booking-detail-summary .booking-detail-room small {
+  color: #7890ad;
+  font-size: 11px;
+  font-weight: 650;
+}
+.booking-detail-summary .booking-schedule-summary {
+  display: grid;
+  gap: 8px;
+  padding: 11px 0 0;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid #e6edf7;
+  border-radius: 0;
 }
 .booking-office-timezone {
   color: #6783a4;
@@ -2215,26 +2248,6 @@ body {
 .booking-status-cancelled {
   color: #9f4550;
   background: #fee2e2;
-}
-.booking-detail-room {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 11px;
-  background: #f5f8fc;
-  border-radius: 11px;
-}
-.booking-detail-room > span:last-child {
-  display: grid;
-  gap: 3px;
-}
-.booking-detail-room strong {
-  color: var(--ink);
-  font-size: 13px;
-}
-.booking-detail-room small {
-  color: var(--muted);
-  font-size: 11px;
 }
 .room-detail-icon {
   display: grid;
