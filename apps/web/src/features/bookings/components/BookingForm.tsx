@@ -8,7 +8,7 @@ import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { ApiError } from '../../../lib/api-client';
 import { formatClockMinutes, getBookingDurationOptions } from '../../../lib/dates';
-import { OFFICE_TIMEZONE } from '../../../lib/timezone';
+import { OFFICE_TIMEZONE, formatUserDateTime, formatUserTime } from '../../../lib/timezone';
 import { useUserSearch } from '../../users/hooks/use-user-search';
 import type { DirectoryUser } from '../../users/types';
 import { TimeInput } from './TimeInput';
@@ -28,6 +28,7 @@ export function BookingForm({
   startAt,
   endAt,
   roomName,
+  roomCapacity,
   workingStartMinutes,
   workingEndMinutes,
   currentUserEmail,
@@ -40,6 +41,7 @@ export function BookingForm({
   startAt: Date;
   endAt: Date;
   roomName: string;
+  roomCapacity: number;
   workingStartMinutes: number;
   workingEndMinutes: number;
   currentUserEmail: string;
@@ -95,6 +97,7 @@ export function BookingForm({
     (selectedStartMinutes < workingStartMinutes || selectedEndMinutes > workingEndMinutes),
   );
   const normalizedCurrentUserEmail = currentUserEmail.trim().toLowerCase();
+  const exceedsCapacity = participants.length + 1 > roomCapacity;
 
   function setQuickDuration(minutes: number) {
     const nextEndAt = addMinutes(previewStartAt, minutes);
@@ -146,6 +149,7 @@ export function BookingForm({
       setError('endTime', { type: 'working-hours', message });
       return;
     }
+    if (exceedsCapacity) return;
     if (!selectedStartAt || !selectedEndAt) return;
     if (error instanceof ApiError && error.fields) {
       for (const [field, message] of Object.entries(error.fields))
@@ -165,8 +169,7 @@ export function BookingForm({
       <div className="booking-summary">
         <span>{roomName}</span>
         <strong>
-          {previewStartAt.toLocaleString('uk-UA', { dateStyle: 'medium', timeStyle: 'short' })} —{' '}
-          {previewEndAt.toLocaleTimeString('uk-UA', { timeStyle: 'short' })}
+          {formatUserDateTime(previewStartAt)} — {formatUserTime(previewEndAt)}
         </strong>
         <small>
           Години кімнати: {formatClockMinutes(workingStartMinutes)}–
@@ -295,8 +298,15 @@ export function BookingForm({
             </div>
           ) : null}
         </div>
-        <small className="field-hint">Додайте колег, які вже зареєстровані в Roomly</small>
-        {errors.participantEmails?.message ? (
+        <small className="field-hint">
+          {participants.length + 1} з {roomCapacity} місць зайнято · додайте колег, які вже
+          зареєстровані в Roomly
+        </small>
+        {exceedsCapacity ? (
+          <p className="field-error">
+            У кімнаті може бути не більше {roomCapacity} людей разом з вами
+          </p>
+        ) : errors.participantEmails?.message ? (
           <p className="field-error">{errors.participantEmails.message}</p>
         ) : null}
       </div>
@@ -308,7 +318,10 @@ export function BookingForm({
         <Button type="button" variant="ghost" onClick={onCancel}>
           Скасувати
         </Button>
-        <Button type="submit" disabled={isPending || Boolean(conflict) || outsideWorkingHours}>
+        <Button
+          type="submit"
+          disabled={isPending || Boolean(conflict) || outsideWorkingHours || exceedsCapacity}
+        >
           {isPending ? 'Бронюємо…' : 'Забронювати'}
         </Button>
       </div>

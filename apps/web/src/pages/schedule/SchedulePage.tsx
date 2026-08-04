@@ -22,7 +22,7 @@ import {
   getWeekStartKey,
   shiftWeek,
 } from '../../lib/dates';
-import { timezoneNote } from '../../lib/timezone';
+import { formatUserDateTime, formatUserTime, timezoneNote } from '../../lib/timezone';
 
 interface SlotSelection {
   startAt: Date;
@@ -34,7 +34,9 @@ export function SchedulePage() {
   const rooms = useRooms();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedRoomId, setSelectedRoomId] = useState<string>();
-  const [weekStart, setWeekStart] = useState(getWeekStartKey());
+  const requestedWeekStart = searchParams.get('weekStart');
+  const initialWeekStart = requestedWeekStart ?? getWeekStartKey();
+  const [weekStart, setWeekStart] = useState(initialWeekStart);
   const [slot, setSlot] = useState<SlotSelection | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
@@ -43,6 +45,7 @@ export function SchedulePage() {
   const createBooking = useCreateBooking();
   const cancelBooking = useCancelBooking();
   const requestedRoomId = searchParams.get('roomId');
+  const requestedBookingId = searchParams.get('bookingId');
   const isBookingPromptVisible = searchParams.get('action') === 'book';
 
   useEffect(() => {
@@ -53,6 +56,21 @@ export function SchedulePage() {
       setSelectedRoomId(rooms.data[0].id);
     }
   }, [rooms.data, requestedRoomId, selectedRoomId]);
+
+  useEffect(() => {
+    const nextWeekStart = requestedWeekStart ?? getWeekStartKey();
+    if (nextWeekStart !== weekStart) setWeekStart(nextWeekStart);
+  }, [requestedWeekStart, weekStart]);
+
+  useEffect(() => {
+    if (!requestedBookingId || !bookings.data) return;
+    const booking = bookings.data.find((item) => item.id === requestedBookingId);
+    if (!booking) return;
+    setSelectedBooking(booking);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('bookingId');
+    setSearchParams(nextParams, { replace: true });
+  }, [bookings.data, requestedBookingId, searchParams, setSearchParams]);
 
   const selectedRoom = rooms.data?.find((room) => room.id === selectedRoomId);
   const workingStartMinutes = selectedRoom?.workStartMinutes ?? CALENDAR_START_MINUTES;
@@ -72,7 +90,7 @@ export function SchedulePage() {
         onSuccess: (booking) => {
           setSlot(null);
           setToast(
-            `Переговорну заброньовано · ${booking.title} · ${new Date(booking.startAt).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}–${new Date(booking.endAt).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })}`,
+            `Переговорну заброньовано · ${booking.title} · ${formatUserTime(new Date(booking.startAt))}–${formatUserTime(new Date(booking.endAt))}`,
           );
         },
       },
@@ -99,6 +117,13 @@ export function SchedulePage() {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set('roomId', roomId);
     nextParams.delete('action');
+    setSearchParams(nextParams, { replace: true });
+  }
+
+  function selectWeek(nextWeekStart: string) {
+    setWeekStart(nextWeekStart);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('weekStart', nextWeekStart);
     setSearchParams(nextParams, { replace: true });
   }
 
@@ -162,7 +187,7 @@ export function SchedulePage() {
         <div className="week-controls">
           <Button
             variant="secondary"
-            onClick={() => setWeekStart(shiftWeek(weekStart, -1))}
+            onClick={() => selectWeek(shiftWeek(weekStart, -1))}
             aria-label="Попередній тиждень"
           >
             ‹
@@ -170,12 +195,12 @@ export function SchedulePage() {
           <strong>{formatWeekLabel(weekStart)}</strong>
           <Button
             variant="secondary"
-            onClick={() => setWeekStart(shiftWeek(weekStart, 1))}
+            onClick={() => selectWeek(shiftWeek(weekStart, 1))}
             aria-label="Наступний тиждень"
           >
             ›
           </Button>
-          <Button variant="secondary" onClick={() => setWeekStart(getWeekStartKey())}>
+          <Button variant="secondary" onClick={() => selectWeek(getWeekStartKey())}>
             Сьогодні
           </Button>
         </div>
@@ -220,6 +245,7 @@ export function SchedulePage() {
             startAt={slot.startAt}
             endAt={slot.endAt}
             roomName={selectedRoom.name}
+            roomCapacity={selectedRoom.capacity}
             workingStartMinutes={workingStartMinutes}
             workingEndMinutes={workingEndMinutes}
             currentUserEmail={user?.email ?? ''}
@@ -251,16 +277,8 @@ export function SchedulePage() {
             <div className="cancel-dialog-icon">!</div>
             <p>
               Бронювання «{bookingToCancel.title}» на{' '}
-              {new Date(bookingToCancel.startAt).toLocaleDateString('uk-UA', {
-                day: 'numeric',
-                month: 'long',
-              })}
-              ,{' '}
-              {new Date(bookingToCancel.startAt).toLocaleTimeString('uk-UA', {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}{' '}
-              буде скасовано.
+              {formatUserDateTime(new Date(bookingToCancel.startAt))}–
+              {formatUserTime(new Date(bookingToCancel.endAt))} буде скасовано.
             </p>
             <div className="modal-actions">
               <Button type="button" variant="ghost" onClick={() => setBookingToCancel(null)}>

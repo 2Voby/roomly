@@ -1,4 +1,10 @@
 import { Button } from '../../../components/ui/Button';
+import {
+  OFFICE_TIMEZONE,
+  formatUserDateTime,
+  formatUserTime,
+  getUserTimezone,
+} from '../../../lib/timezone';
 import type { Booking } from '../types';
 
 export function BookingDetails({
@@ -35,13 +41,12 @@ export function BookingDetails({
         </span>
       </div>
       <p>
-        {new Date(booking.startAt).toLocaleString('uk-UA', {
-          dateStyle: 'medium',
-          timeStyle: 'short',
-        })}{' '}
-        — {new Date(booking.endAt).toLocaleTimeString('uk-UA', { timeStyle: 'short' })}
+        {formatUserDateTime(new Date(booking.startAt))} — {formatUserTime(new Date(booking.endAt))}
       </p>
-      <p>Тривалість: {durationLabel} · часова зона Europe/Kyiv</p>
+      <p>
+        Тривалість: {durationLabel} · часова зона {getUserTimezone()}
+        {getUserTimezone() !== OFFICE_TIMEZONE ? ` · офісний час ${OFFICE_TIMEZONE}` : ''}
+      </p>
       <p>Забронював: {booking.userName}</p>
       {booking.participants.length > 0 ? (
         <div className="booking-participants-details">

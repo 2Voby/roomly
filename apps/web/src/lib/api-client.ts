@@ -12,9 +12,14 @@ export class ApiError extends Error {
   }
 }
 
+export interface ApiResult<T, M = Record<string, unknown>> {
+  data: T;
+  meta: M;
+}
+
 const apiBaseUrl = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
 
-export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function requestApi<T>(path: string, init: RequestInit = {}): Promise<ApiResult<T>> {
   const headers = new Headers(init.headers);
   if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
 
@@ -38,5 +43,16 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
 
   if (!payload || !('data' in payload))
     throw new ApiError('Некоректна відповідь сервера', response.status, 'INVALID_RESPONSE');
-  return payload.data;
+  return { data: payload.data, meta: payload.meta };
+}
+
+export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+  return (await requestApi<T>(path, init)).data;
+}
+
+export async function apiRequestWithMeta<T, M = Record<string, unknown>>(
+  path: string,
+  init: RequestInit = {},
+): Promise<ApiResult<T, M>> {
+  return (await requestApi<T>(path, init)) as ApiResult<T, M>;
 }

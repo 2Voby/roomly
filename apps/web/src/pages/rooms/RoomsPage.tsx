@@ -1,17 +1,30 @@
 import { useMemo, useState } from 'react';
+import { formatInTimeZone } from 'date-fns-tz';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '../../components/ui/Button';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { Spinner } from '../../components/ui/Spinner';
-import { useRooms } from '../../features/rooms/hooks/use-rooms';
+import { useRoomAvailability, useRooms } from '../../features/rooms/hooks/use-rooms';
+import type { RoomAvailability } from '../../features/rooms/types';
 import { formatClockMinutes } from '../../lib/dates';
+import { OFFICE_TIMEZONE } from '../../lib/timezone';
 
 const roomColors = ['blue', 'purple', 'lime', 'yellow', 'cyan', 'coral'];
+
+function availabilityLabel(room: RoomAvailability | undefined): string {
+  if (!room) return 'Перевіряємо доступність…';
+  if (room.status === 'available') return 'Вільна зараз';
+  if (room.status === 'closed') return 'Поза робочими годинами';
+  return room.occupiedUntil
+    ? `Зайнята до ${formatInTimeZone(new Date(room.occupiedUntil), OFFICE_TIMEZONE, 'HH:mm')}`
+    : 'Зайнята';
+}
 
 export function RoomsPage() {
   const navigate = useNavigate();
   const rooms = useRooms();
+  const availability = useRoomAvailability();
   const [capacity, setCapacity] = useState<'all' | 'small' | 'medium' | 'large'>('all');
   const visibleRooms = useMemo(() => {
     if (!rooms.data) return [];
@@ -22,6 +35,10 @@ export function RoomsPage() {
       return true;
     });
   }, [capacity, rooms.data]);
+  const availabilityByRoomId = useMemo(
+    () => new Map((availability.data ?? []).map((room) => [room.id, room])),
+    [availability.data],
+  );
 
   function openSchedule(roomId: string, action?: 'book') {
     const params = new URLSearchParams({ roomId });
@@ -86,9 +103,26 @@ export function RoomsPage() {
                   Години: {formatClockMinutes(room.workStartMinutes)}–
                   {formatClockMinutes(room.workEndMinutes)} · Europe/Kyiv
                 </span>
-                <span className="room-availability">
-                  <i /> Доступна для бронювання
-                </span>
+                {(() => {
+                  const roomStatus = availabilityByRoomId.get(room.id);
+                  return (
+                    <span
+                      className={`room-availability room-status-${roomStatus?.status ?? 'loading'}`}
+                    >
+                      <i /> {availabilityLabel(roomStatus)}
+                      {roomStatus?.status === 'closed' && roomStatus.nextAvailableAt ? (
+                        <small>
+                          Наступний вільний час —{' '}
+                          {formatInTimeZone(
+                            new Date(roomStatus.nextAvailableAt),
+                            OFFICE_TIMEZONE,
+                            'HH:mm',
+                          )}
+                        </small>
+                      ) : null}
+                    </span>
+                  );
+                })()}
                 <div className="room-card-actions">
                   <Button variant="secondary" onClick={() => openSchedule(room.id)}>
                     Переглянути розклад

@@ -1881,9 +1881,37 @@ body {
   background: #fb7185;
 }
 .room-availability {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 4px;
   color: #678157;
   font-size: 11px;
   font-weight: 700;
+}
+.room-availability small {
+  width: 100%;
+  margin-top: 3px;
+  margin-left: 12px;
+  color: #87927f;
+  font-size: 10px;
+  font-weight: 650;
+}
+.room-status-occupied {
+  color: #b45309;
+}
+.room-status-occupied i {
+  background: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.13);
+}
+.room-status-closed,
+.room-status-loading {
+  color: #7b8494;
+}
+.room-status-closed i,
+.room-status-loading i {
+  background: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.13);
 }
 .room-card-actions {
   display: flex;
@@ -1940,6 +1968,11 @@ body {
 .my-booking-list {
   display: grid;
   gap: 10px;
+}
+.load-more-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
 }
 .my-booking-row {
   display: flex;

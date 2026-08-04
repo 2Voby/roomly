@@ -1,12 +1,15 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { bookingsApi } from '../api/bookings-api';
 import type { CreateBookingInput } from '../types';
 
 export function useMyBookings(type: 'upcoming' | 'past') {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['bookings', 'my', type],
-    queryFn: ({ signal }) => bookingsApi.mine(type, signal),
+    queryFn: ({ pageParam, signal }) => bookingsApi.mine(type, pageParam, signal),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.page < lastPage.meta.totalPages ? lastPage.meta.page + 1 : undefined,
   });
 }
 
