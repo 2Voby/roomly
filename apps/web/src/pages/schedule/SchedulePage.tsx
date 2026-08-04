@@ -67,9 +67,6 @@ export function SchedulePage() {
     const booking = bookings.data.find((item) => item.id === requestedBookingId);
     if (!booking) return;
     setSelectedBooking(booking);
-    const nextParams = new URLSearchParams(searchParams);
-    nextParams.delete('bookingId');
-    setSearchParams(nextParams, { replace: true });
   }, [bookings.data, requestedBookingId, searchParams, setSearchParams]);
 
   const selectedRoom = rooms.data?.find((room) => room.id === selectedRoomId);
@@ -107,6 +104,7 @@ export function SchedulePage() {
       onSuccess: () => {
         setBookingToCancel(null);
         setSelectedBooking(null);
+        clearBookingQuery();
         setToast('Бронювання скасовано');
       },
     });
@@ -130,6 +128,12 @@ export function SchedulePage() {
   function dismissBookingPrompt() {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete('action');
+    setSearchParams(nextParams, { replace: true });
+  }
+
+  function clearBookingQuery() {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('bookingId');
     setSearchParams(nextParams, { replace: true });
   }
 
@@ -260,14 +264,20 @@ export function SchedulePage() {
       {selectedBooking ? (
         <Modal
           title={selectedBooking.userId === user?.id ? 'Ваше бронювання' : 'Деталі бронювання'}
-          onClose={() => setSelectedBooking(null)}
+          onClose={() => {
+            setSelectedBooking(null);
+            clearBookingQuery();
+          }}
         >
           <BookingDetails
             booking={selectedBooking}
             isOwner={selectedBooking.userId === user?.id}
             isPending={cancelBooking.isPending}
             onCancel={handleCancel}
-            onClose={() => setSelectedBooking(null)}
+            onClose={() => {
+              setSelectedBooking(null);
+              clearBookingQuery();
+            }}
           />
         </Modal>
       ) : null}
