@@ -1,16 +1,21 @@
 import { CALENDAR_SLOT_MINUTES } from '../../../lib/dates';
+import { officeDateTimeToUtc } from '../../../lib/dates';
+import { getUserTimezone } from '../../../lib/timezone';
+import { formatInTimeZone } from 'date-fns-tz';
 
 export function TimeColumn({
+  weekStart,
   workingStartMinutes,
   workingEndMinutes,
 }: {
+  weekStart: string;
   workingStartMinutes: number;
   workingEndMinutes: number;
 }) {
   const slotCount = (workingEndMinutes - workingStartMinutes) / CALENDAR_SLOT_MINUTES;
   const labels = Array.from({ length: slotCount + 1 }, (_, index) => {
     const minutes = workingStartMinutes + index * CALENDAR_SLOT_MINUTES;
-    return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+    return formatInTimeZone(officeDateTimeToUtc(weekStart, minutes), getUserTimezone(), 'HH:mm');
   });
   return (
     <div className="time-column">

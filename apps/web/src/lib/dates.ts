@@ -1,8 +1,8 @@
 import { addDays, format, parseISO, startOfWeek } from 'date-fns';
 import { uk } from 'date-fns/locale';
-import { fromZonedTime, formatInTimeZone, toZonedTime } from 'date-fns-tz';
+import { formatInTimeZone, fromZonedTime, toZonedTime } from 'date-fns-tz';
 
-import { OFFICE_TIMEZONE } from './timezone';
+import { getUserTimezone, OFFICE_TIMEZONE } from './timezone';
 
 export const CALENDAR_START_MINUTES = 9 * 60;
 export const CALENDAR_END_MINUTES = 19 * 60;
@@ -44,15 +44,21 @@ export function officeDateTimeToUtc(dayKey: string, minutes: number): Date {
   );
 }
 
-export function formatWeekLabel(weekStart: string): string {
-  const utc = fromZonedTime(`${weekStart}T00:00:00`, OFFICE_TIMEZONE);
-  const end = addDays(utc, 6);
-  return `${formatInTimeZone(utc, OFFICE_TIMEZONE, 'd MMMM', { locale: uk })} — ${formatInTimeZone(end, OFFICE_TIMEZONE, 'd MMMM yyyy', { locale: uk })}`;
+export function formatWeekLabel(weekStart: string, timezone = getUserTimezone()): string {
+  const utc = officeDateTimeToUtc(weekStart, CALENDAR_START_MINUTES);
+  const endOfficeDate = format(addDays(parseISO(weekStart), 6), 'yyyy-MM-dd');
+  const end = officeDateTimeToUtc(endOfficeDate, CALENDAR_START_MINUTES);
+  return `${formatInTimeZone(utc, timezone, 'd MMMM', { locale: uk })} — ${formatInTimeZone(end, timezone, 'd MMMM yyyy', { locale: uk })}`;
 }
 
-export function formatDayLabel(dayKey: string): string {
-  const date = parseISO(dayKey);
-  return format(date, 'EEE, d MMMM', { locale: uk });
+export function formatDayLabel(
+  dayKey: string,
+  timezone = getUserTimezone(),
+  workStartMinutes = CALENDAR_START_MINUTES,
+): string {
+  return formatInTimeZone(officeDateTimeToUtc(dayKey, workStartMinutes), timezone, 'EEE, d MMMM', {
+    locale: uk,
+  });
 }
 
 export function getWeekDays(weekStart: string): string[] {

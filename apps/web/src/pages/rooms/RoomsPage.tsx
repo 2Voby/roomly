@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { formatInTimeZone } from 'date-fns-tz';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '../../components/ui/Button';
@@ -8,7 +7,7 @@ import { Spinner } from '../../components/ui/Spinner';
 import { useRoomAvailability, useRooms } from '../../features/rooms/hooks/use-rooms';
 import type { RoomAvailability } from '../../features/rooms/types';
 import { formatClockMinutes } from '../../lib/dates';
-import { OFFICE_TIMEZONE } from '../../lib/timezone';
+import { formatUserTime } from '../../lib/timezone';
 
 const roomColors = ['blue', 'purple', 'lime', 'yellow', 'cyan', 'coral'];
 
@@ -17,7 +16,7 @@ function availabilityLabel(room: RoomAvailability | undefined): string {
   if (room.status === 'available') return 'Вільна зараз';
   if (room.status === 'closed') return 'Поза робочими годинами';
   return room.occupiedUntil
-    ? `Зайнята до ${formatInTimeZone(new Date(room.occupiedUntil), OFFICE_TIMEZONE, 'HH:mm')}`
+    ? `Зайнята до ${formatUserTime(new Date(room.occupiedUntil))}`
     : 'Зайнята';
 }
 
@@ -113,11 +112,7 @@ export function RoomsPage() {
                       {roomStatus?.status === 'closed' && roomStatus.nextAvailableAt ? (
                         <small>
                           Наступний вільний час —{' '}
-                          {formatInTimeZone(
-                            new Date(roomStatus.nextAvailableAt),
-                            OFFICE_TIMEZONE,
-                            'HH:mm',
-                          )}
+                          {formatUserTime(new Date(roomStatus.nextAvailableAt))}
                         </small>
                       ) : null}
                     </span>

@@ -2,7 +2,7 @@ import { formatInTimeZone } from 'date-fns-tz';
 
 import type { Booking } from '../../bookings/types';
 import { formatDayLabel, getWeekDays, isToday } from '../../../lib/dates';
-import { OFFICE_TIMEZONE } from '../../../lib/timezone';
+import { getUserTimezone, OFFICE_TIMEZONE } from '../../../lib/timezone';
 import { DayColumn } from './DayColumn';
 import { TimeColumn } from './TimeColumn';
 
@@ -31,12 +31,13 @@ export function WeekCalendar({
           <div className="calendar-corner" />
           {days.map((day) => (
             <div className={`day-header ${isToday(day) ? 'day-header-today' : ''}`} key={day}>
-              {formatDayLabel(day)}
+              {formatDayLabel(day, getUserTimezone(), workingStartMinutes)}
             </div>
           ))}
         </div>
         <div className="calendar-board">
           <TimeColumn
+            weekStart={weekStart}
             workingStartMinutes={workingStartMinutes}
             workingEndMinutes={workingEndMinutes}
           />

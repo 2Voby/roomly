@@ -1,9 +1,8 @@
-import { formatInTimeZone } from 'date-fns-tz';
 import type { CSSProperties } from 'react';
 
 import type { Booking } from '../../bookings/types';
 import { CALENDAR_SLOT_MINUTES } from '../../../lib/dates';
-import { OFFICE_TIMEZONE } from '../../../lib/timezone';
+import { formatUserTime } from '../../../lib/timezone';
 import { bookingColorForUser, bookingStyle } from '../utils/calendar';
 
 export function BookingCard({
@@ -49,8 +48,7 @@ export function BookingCard({
       <strong>{booking.title}</strong>
       {!isCompact ? (
         <span>
-          {formatInTimeZone(new Date(booking.startAt), OFFICE_TIMEZONE, 'HH:mm')} —{' '}
-          {formatInTimeZone(new Date(booking.endAt), OFFICE_TIMEZONE, 'HH:mm')}
+          {formatUserTime(new Date(booking.startAt))} — {formatUserTime(new Date(booking.endAt))}
         </span>
       ) : null}
       <span className="booking-card-footer">

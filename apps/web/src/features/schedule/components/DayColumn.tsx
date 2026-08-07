@@ -1,9 +1,9 @@
 import { useRef, useState, type CSSProperties, type PointerEvent } from 'react';
-import { toZonedTime } from 'date-fns-tz';
+import { formatInTimeZone } from 'date-fns-tz';
 
 import type { Booking } from '../../bookings/types';
 import { BOOKING_MAX_DURATION_MINUTES, CALENDAR_SLOT_MINUTES, isToday } from '../../../lib/dates';
-import { OFFICE_TIMEZONE } from '../../../lib/timezone';
+import { getUserTimezone } from '../../../lib/timezone';
 import { BookingCard } from './BookingCard';
 import { CurrentTimeIndicator } from './CurrentTimeIndicator';
 import { isSlotBooked, slotRange } from '../utils/calendar';
@@ -41,10 +41,10 @@ export function DayColumn({
   const dragRef = useRef<DragState | null>(null);
   const suppressClickRef = useRef(false);
   const [selection, setSelection] = useState<SlotSelection | null>(null);
-  const current = toZonedTime(new Date(), OFFICE_TIMEZONE);
-  const localMinutes = current.getHours() * 60 + current.getMinutes();
+  const dayStart = slotRange(dayKey, 0, workingStartMinutes).startAt;
+  const dayEnd = slotRange(dayKey, slotCount - 1, workingStartMinutes).endAt;
   const currentTop =
-    ((localMinutes - workingStartMinutes) / (workingEndMinutes - workingStartMinutes)) * 100;
+    ((Date.now() - dayStart.getTime()) / (dayEnd.getTime() - dayStart.getTime())) * 100;
 
   const blockedSlots = Array.from({ length: slotCount }, (_, index) =>
     isSlotBooked(slotRange(dayKey, index, workingStartMinutes), bookings),
@@ -180,8 +180,8 @@ export function DayColumn({
             aria-disabled={isBlocked}
             aria-label={
               isBlocked
-                ? `Зайнятий слот ${range.startAt.toLocaleString('uk-UA')}`
-                : `Вільний слот ${range.startAt.toLocaleString('uk-UA')}`
+                ? `Зайнятий слот ${formatInTimeZone(range.startAt, getUserTimezone(), 'd MMMM, HH:mm')}`
+                : `Вільний слот ${formatInTimeZone(range.startAt, getUserTimezone(), 'd MMMM, HH:mm')}`
             }
             onPointerDown={(event) => handlePointerDown(index, event)}
             onClick={() => handleSlotClick(index)}
