@@ -1,3 +1,4 @@
+import { addMinutes } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
@@ -8,8 +9,17 @@ import { Modal } from '../../components/ui/Modal';
 import { Spinner } from '../../components/ui/Spinner';
 import { BookingDetails } from '../../features/bookings/components/BookingDetails';
 import { BookingForm } from '../../features/bookings/components/BookingForm';
-import { useCancelBooking, useCreateBooking } from '../../features/bookings/hooks/use-bookings';
-import type { Booking, CreateBookingInput } from '../../features/bookings/types';
+import {
+  useCancelBooking,
+  useCancelBookingSeries,
+  useCreateBooking,
+  useUpdateBooking,
+} from '../../features/bookings/hooks/use-bookings';
+import type {
+  Booking,
+  CreateBookingInput,
+  UpdateBookingInput,
+} from '../../features/bookings/types';
 import { useCurrentUser } from '../../features/auth/hooks/use-auth';
 import { useRoomBookings, useRooms } from '../../features/rooms/hooks/use-rooms';
 import { CalendarLegend } from '../../features/schedule/components/CalendarLegend';
@@ -40,13 +50,22 @@ export function SchedulePage() {
   const [slot, setSlot] = useState<SlotSelection | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
+  const [seriesToCancel, setSeriesToCancel] = useState<Booking | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const bookings = useRoomBookings(selectedRoomId, weekStart);
   const createBooking = useCreateBooking();
   const cancelBooking = useCancelBooking();
+  const cancelBookingSeries = useCancelBookingSeries();
+  const updateBooking = useUpdateBooking();
   const requestedRoomId = searchParams.get('roomId');
   const requestedBookingId = searchParams.get('bookingId');
   const isBookingPromptVisible = searchParams.get('action') === 'book';
+  const repeatTitle = searchParams.get('repeatTitle') ?? '';
+  const requestedRepeatDuration = Number(searchParams.get('repeatDuration'));
+  const repeatDurationMinutes =
+    requestedRepeatDuration >= 30 && requestedRepeatDuration <= 240
+      ? requestedRepeatDuration
+      : null;
 
   useEffect(() => {
     const roomFromQuery = rooms.data?.find((room) => room.id === requestedRoomId);
@@ -84,10 +103,14 @@ export function SchedulePage() {
     createBooking.mutate(
       { ...input, roomId: selectedRoomId },
       {
-        onSuccess: (booking) => {
+        onSuccess: (result) => {
+          const booking = result.booking;
           setSlot(null);
+          clearRepeatQuery();
           setToast(
-            `Переговорну заброньовано · ${booking.title} · ${formatUserTime(new Date(booking.startAt))}–${formatUserTime(new Date(booking.endAt))}`,
+            result.series
+              ? `Створено серію з ${result.bookings.length} зустрічей · ${booking.title}`
+              : `Переговорну заброньовано · ${booking.title} · ${formatUserTime(new Date(booking.startAt))}–${formatUserTime(new Date(booking.endAt))}`,
           );
         },
       },
@@ -98,6 +121,20 @@ export function SchedulePage() {
     if (selectedBooking) setBookingToCancel(selectedBooking);
   }
 
+  async function handleUpdateBooking(input: UpdateBookingInput) {
+    if (!selectedBooking) return;
+    const booking = await updateBooking.mutateAsync({
+      bookingId: selectedBooking.id,
+      input,
+    });
+    setSelectedBooking(booking);
+    setToast('Зустріч оновлено');
+  }
+
+  function handleCancelSeries() {
+    if (selectedBooking?.series) setSeriesToCancel(selectedBooking);
+  }
+
   function confirmCancel() {
     if (!bookingToCancel) return;
     cancelBooking.mutate(bookingToCancel.id, {
@@ -106,6 +143,18 @@ export function SchedulePage() {
         setSelectedBooking(null);
         clearBookingQuery();
         setToast('Бронювання скасовано');
+      },
+    });
+  }
+
+  function confirmCancelSeries() {
+    if (!seriesToCancel?.series) return;
+    cancelBookingSeries.mutate(seriesToCancel.series.id, {
+      onSuccess: (result) => {
+        setSeriesToCancel(null);
+        setSelectedBooking(null);
+        clearBookingQuery();
+        setToast(`Скасовано ${result.cancelledCount} повторів`);
       },
     });
   }
@@ -128,6 +177,14 @@ export function SchedulePage() {
   function dismissBookingPrompt() {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete('action');
+    setSearchParams(nextParams, { replace: true });
+  }
+
+  function clearRepeatQuery() {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('action');
+    nextParams.delete('repeatTitle');
+    nextParams.delete('repeatDuration');
     setSearchParams(nextParams, { replace: true });
   }
 
@@ -238,27 +295,47 @@ export function SchedulePage() {
           onSlotSelect={(startAt, endAt) => {
             createBooking.reset();
             dismissBookingPrompt();
-            setSlot({ startAt, endAt });
+            setSlot({
+              startAt,
+              endAt: repeatDurationMinutes ? addMinutes(startAt, repeatDurationMinutes) : endAt,
+            });
           }}
           onBookingClick={setSelectedBooking}
         />
       )}
       {slot && selectedRoom ? (
         <Modal title="Нове бронювання" onClose={() => setSlot(null)}>
-          <BookingForm
-            startAt={slot.startAt}
-            endAt={slot.endAt}
-            roomName={selectedRoom.name}
-            roomCapacity={selectedRoom.capacity}
-            workingStartMinutes={workingStartMinutes}
-            workingEndMinutes={workingEndMinutes}
-            currentUserEmail={user?.email ?? ''}
-            bookings={bookings.data ?? []}
-            isPending={createBooking.isPending}
-            error={createBooking.error}
-            onSubmit={submitBooking}
-            onCancel={() => setSlot(null)}
-          />
+          {user?.emailVerifiedAt ? (
+            <BookingForm
+              startAt={slot.startAt}
+              endAt={slot.endAt}
+              roomName={selectedRoom.name}
+              roomCapacity={selectedRoom.capacity}
+              initialTitle={repeatTitle}
+              workingStartMinutes={workingStartMinutes}
+              workingEndMinutes={workingEndMinutes}
+              currentUserEmail={user.email}
+              bookings={bookings.data ?? []}
+              isPending={createBooking.isPending}
+              error={createBooking.error}
+              onSubmit={submitBooking}
+              onCancel={() => setSlot(null)}
+            />
+          ) : (
+            <div className="verification-prompt">
+              <div className="verification-prompt-icon" aria-hidden="true">
+                @
+              </div>
+              <h2>Підтвердіть email</h2>
+              <p>
+                Бронювання стане доступним після підтвердження адреси. У dev-режимі посилання
+                зʼявиться в логах API/worker.
+              </p>
+              <Button type="button" variant="ghost" onClick={() => setSlot(null)}>
+                Закрити
+              </Button>
+            </div>
+          )}
         </Modal>
       ) : null}
       {selectedBooking ? (
@@ -273,7 +350,11 @@ export function SchedulePage() {
             booking={selectedBooking}
             isOwner={selectedBooking.userId === user?.id}
             isPending={cancelBooking.isPending}
+            isUpdating={updateBooking.isPending}
+            updateError={updateBooking.error}
             onCancel={handleCancel}
+            onCancelSeries={handleCancelSeries}
+            onUpdateBooking={handleUpdateBooking}
             onClose={() => {
               setSelectedBooking(null);
               clearBookingQuery();
@@ -301,6 +382,30 @@ export function SchedulePage() {
                 onClick={confirmCancel}
               >
                 {cancelBooking.isPending ? 'Скасовуємо…' : 'Так, скасувати'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      ) : null}
+      {seriesToCancel?.series ? (
+        <Modal title="Скасувати всю серію?" onClose={() => setSeriesToCancel(null)}>
+          <div className="cancel-dialog">
+            <div className="cancel-dialog-icon">!</div>
+            <p>
+              Будуть скасовані всі майбутні активні повтори серії «{seriesToCancel.title}». Минулі
+              зустрічі залишаться в історії.
+            </p>
+            <div className="modal-actions">
+              <Button type="button" variant="ghost" onClick={() => setSeriesToCancel(null)}>
+                Не скасовувати
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                disabled={cancelBookingSeries.isPending}
+                onClick={confirmCancelSeries}
+              >
+                {cancelBookingSeries.isPending ? 'Скасовуємо…' : 'Скасувати всю серію'}
               </Button>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { addMinutes, differenceInMinutes } from 'date-fns';
+import { addMinutes, addWeeks, differenceInMinutes } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -12,12 +12,17 @@ import {
   formatClockMinutes,
   getBookingDurationOptions,
 } from '../../../lib/dates';
-import { OFFICE_TIMEZONE, formatUserDate, formatUserTime } from '../../../lib/timezone';
+import {
+  OFFICE_TIMEZONE,
+  formatUserDate,
+  formatUserDateTime,
+  formatUserTime,
+} from '../../../lib/timezone';
 import { useUserSearch } from '../../users/hooks/use-user-search';
 import type { DirectoryUser } from '../../users/types';
 import { TimeInput } from './TimeInput';
 import { findBookingConflict } from '../utils/booking-conflict';
-import { formatOfficeTime, officeDateTimeForTime, timeToMinutes } from '../utils/booking-time';
+import { formatOfficeTime, timeToMinutes, userDateTimeForTime } from '../utils/booking-time';
 import { bookingFormSchema, type BookingFormValues } from '../schemas/booking-schema';
 import type { Booking, CreateBookingInput } from '../types';
 
@@ -28,11 +33,26 @@ function formatDuration(minutes: number) {
   return rest === 0 ? `${hours} год` : `${hours} год ${rest} хв`;
 }
 
+function getSeriesConflictLabels(error: Error | null): string[] {
+  if (!(error instanceof ApiError) || error.code !== 'BOOKING_SERIES_CONFLICT') return [];
+  if (!error.details || typeof error.details !== 'object' || !('conflicts' in error.details))
+    return [];
+  const conflicts = (error.details as { conflicts?: unknown }).conflicts;
+  if (!Array.isArray(conflicts)) return [];
+  return conflicts.flatMap((conflict) => {
+    if (!conflict || typeof conflict !== 'object') return [];
+    const item = conflict as { startAt?: unknown; endAt?: unknown; title?: unknown };
+    if (typeof item.startAt !== 'string' || typeof item.endAt !== 'string') return [];
+    return [`${formatUserDateTime(new Date(item.startAt))} — ${item.title ?? 'зайнятий слот'}`];
+  });
+}
+
 export function BookingForm({
   startAt,
   endAt,
   roomName,
   roomCapacity,
+  initialTitle = '',
   workingStartMinutes,
   workingEndMinutes,
   currentUserEmail,
@@ -46,6 +66,7 @@ export function BookingForm({
   endAt: Date;
   roomName: string;
   roomCapacity: number;
+  initialTitle?: string;
   workingStartMinutes: number;
   workingEndMinutes: number;
   currentUserEmail: string;
@@ -55,9 +76,8 @@ export function BookingForm({
   onSubmit: (input: CreateBookingInput) => void;
   onCancel: () => void;
 }) {
-  const dayKey = formatInTimeZone(startAt, OFFICE_TIMEZONE, 'yyyy-MM-dd');
-  const initialStartTime = formatOfficeTime(startAt);
-  const initialEndTime = formatOfficeTime(endAt);
+  const initialStartTime = formatUserTime(startAt);
+  const initialEndTime = formatUserTime(endAt);
   const [participantQuery, setParticipantQuery] = useState('');
   const [participants, setParticipants] = useState<DirectoryUser[]>([]);
   const userSearch = useUserSearch(participantQuery);
@@ -72,18 +92,28 @@ export function BookingForm({
   } = useForm<BookingFormValues>({
     resolver: zodResolver(bookingFormSchema),
     defaultValues: {
+      title: initialTitle,
       startTime: initialStartTime,
       endTime: initialEndTime,
       participantEmails: [],
+      recurrenceEnabled: false,
+      occurrences: 8,
     },
   });
 
   const selectedStartTime = watch('startTime');
   const selectedEndTime = watch('endTime');
-  const selectedStartAt = officeDateTimeForTime(dayKey, selectedStartTime);
-  const selectedEndAt = officeDateTimeForTime(dayKey, selectedEndTime);
+  const recurrenceEnabled = watch('recurrenceEnabled');
+  const occurrences = watch('occurrences');
+  const selectedStartAt = userDateTimeForTime(startAt, selectedStartTime);
+  const selectedEndAt = userDateTimeForTime(startAt, selectedEndTime, true, selectedStartTime);
   const previewStartAt = selectedStartAt ?? startAt;
   const previewEndAt = selectedEndAt ?? endAt;
+  const recurrenceDates = recurrenceEnabled
+    ? Array.from({ length: Number(occurrences) || 0 }, (_, index) =>
+        addWeeks(previewStartAt, index),
+      )
+    : [];
   const duration =
     selectedStartAt && selectedEndAt && selectedStartAt < selectedEndAt
       ? differenceInMinutes(selectedEndAt, selectedStartAt)
@@ -91,31 +121,44 @@ export function BookingForm({
   const exceedsMaximumDuration = duration !== null && duration > BOOKING_MAX_DURATION_MINUTES;
   const durationOptions = getBookingDurationOptions(previewStartAt, workingEndMinutes);
   const conflict = findBookingConflict(bookings, selectedStartAt, selectedEndAt);
-  const selectedStartMinutes = timeToMinutes(selectedStartTime);
-  const selectedEndMinutes = timeToMinutes(selectedEndTime);
-  const hasInvalidStartTime = Boolean(
-    selectedStartTime && selectedEndTime && timeToMinutes(selectedStartTime) === null,
+  const hasInvalidTime = Boolean(
+    selectedStartTime &&
+    selectedEndTime &&
+    (timeToMinutes(selectedStartTime) === null || timeToMinutes(selectedEndTime) === null),
+  );
+  const selectedOfficeStartTime = selectedStartAt ? formatOfficeTime(selectedStartAt) : '';
+  const selectedOfficeEndTime = selectedEndAt ? formatOfficeTime(selectedEndAt) : '';
+  const selectedOfficeStartMinutes = timeToMinutes(selectedOfficeStartTime);
+  const selectedOfficeEndMinutes = timeToMinutes(selectedOfficeEndTime);
+  const officeDatesMatch = Boolean(
+    selectedStartAt &&
+    selectedEndAt &&
+    formatInTimeZone(selectedStartAt, OFFICE_TIMEZONE, 'yyyy-MM-dd') ===
+      formatInTimeZone(selectedEndAt, OFFICE_TIMEZONE, 'yyyy-MM-dd'),
   );
   const outsideWorkingHours = Boolean(
-    selectedStartMinutes !== null &&
-    selectedEndMinutes !== null &&
-    (selectedStartMinutes < workingStartMinutes || selectedEndMinutes > workingEndMinutes),
+    !officeDatesMatch ||
+    selectedOfficeStartMinutes === null ||
+    selectedOfficeEndMinutes === null ||
+    selectedOfficeStartMinutes < workingStartMinutes ||
+    selectedOfficeEndMinutes > workingEndMinutes,
   );
   const normalizedCurrentUserEmail = currentUserEmail.trim().toLowerCase();
   const exceedsCapacity = participants.length + 1 > roomCapacity;
   const timeRangeError = conflict
     ? `Не можна обрати цей час — тут уже є зустріч «${conflict.title}» (${formatOfficeTime(new Date(conflict.startAt))}–${formatOfficeTime(new Date(conflict.endAt))})`
-    : hasInvalidStartTime
-      ? 'Оберіть коректний час початку'
+    : hasInvalidTime
+      ? 'Оберіть коректний час'
       : outsideWorkingHours
         ? `Оберіть час з ${formatClockMinutes(workingStartMinutes)} до ${formatClockMinutes(workingEndMinutes)}`
         : exceedsMaximumDuration
           ? 'Максимальна тривалість бронювання — 4 години'
           : null;
+  const seriesConflictLabels = getSeriesConflictLabels(error);
 
   function setQuickDuration(minutes: number) {
     const nextEndAt = addMinutes(previewStartAt, minutes);
-    setValue('endTime', formatOfficeTime(nextEndAt), {
+    setValue('endTime', formatUserTime(nextEndAt), {
       shouldDirty: true,
       shouldValidate: true,
     });
@@ -176,6 +219,9 @@ export function BookingForm({
       endAt: selectedEndAt.toISOString(),
       participantEmails: values.participantEmails,
       roomId: '',
+      ...(values.recurrenceEnabled
+        ? { recurrence: { type: 'weekly' as const, occurrences: values.occurrences } }
+        : {}),
     });
   }
 
@@ -250,6 +296,50 @@ export function BookingForm({
             </button>
           ))}
         </div>
+      </div>
+
+      {seriesConflictLabels.length > 0 ? (
+        <div className="series-conflict-list" role="alert">
+          <strong>Зайняті повтори:</strong>
+          <ul>
+            {seriesConflictLabels.map((label) => (
+              <li key={label}>{label}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <div className="recurrence-field">
+        <label className="recurrence-toggle">
+          <input type="checkbox" {...register('recurrenceEnabled')} />
+          <span>
+            <strong>Повторювати щотижня</strong>
+            <small>День і час залишаться такими самими</small>
+          </span>
+        </label>
+        {recurrenceEnabled ? (
+          <div className="recurrence-options">
+            <label className="field-label" htmlFor="booking-occurrences">
+              Кількість зустрічей
+            </label>
+            <select
+              id="booking-occurrences"
+              className="input"
+              {...register('occurrences', { valueAsNumber: true })}
+            >
+              {[2, 4, 8, 12, 26, 52].map((count) => (
+                <option value={count} key={count}>
+                  {count}
+                </option>
+              ))}
+            </select>
+            <p className="recurrence-summary">
+              {recurrenceDates.length > 0
+                ? `Щотижня · ${recurrenceDates.length} зустрічей · ${formatUserDate(recurrenceDates[0]!)} — ${formatUserDate(recurrenceDates.at(-1)!)}`
+                : 'Оберіть кількість зустрічей'}
+            </p>
+          </div>
+        ) : null}
       </div>
 
       <Input

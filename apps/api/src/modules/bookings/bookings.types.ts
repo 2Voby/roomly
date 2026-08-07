@@ -1,6 +1,7 @@
-import type { BookingDto } from '@roomly/shared';
+import type { BookingDto, CreateBookingResultDto } from '@roomly/shared';
 
 export type BookingView = BookingDto;
+export type CreateBookingResult = CreateBookingResultDto;
 
 export interface CreateBookingInput {
   title: string;

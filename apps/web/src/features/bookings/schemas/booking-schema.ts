@@ -14,6 +14,8 @@ export const bookingFormSchema = z
     startTime: timeSchema,
     endTime: timeSchema,
     participantEmails: z.array(z.string().email()).max(20),
+    recurrenceEnabled: z.boolean(),
+    occurrences: z.number().int().min(2).max(52),
   })
   .superRefine((values, context) => {
     const startMinutes = timeToMinutes(values.startTime);

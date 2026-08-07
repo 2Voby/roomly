@@ -12,10 +12,38 @@ export const createBookingSchema = z.object({
   endAt: z.string().datetime({ offset: true }),
   roomId: z.string().uuid(),
   participantEmails: z.array(participantEmailSchema).max(20).default([]),
+  recurrence: z
+    .object({
+      type: z.literal('weekly'),
+      occurrences: z.coerce.number().int().min(2).max(52),
+    })
+    .optional(),
 });
 
 export const bookingParamsSchema = z.object({
   bookingId: z.string().uuid(),
+});
+
+export const updateBookingParticipantsSchema = z.object({
+  participantEmails: z.array(participantEmailSchema).max(20).default([]),
+});
+
+export const updateBookingSchema = z
+  .object({
+    title: z
+      .string()
+      .trim()
+      .min(1, 'Введіть назву бронювання')
+      .max(100, 'Назва має бути не довшою за 100 символів')
+      .optional(),
+    startAt: z.string().datetime({ offset: true }).optional(),
+    endAt: z.string().datetime({ offset: true }).optional(),
+    participantEmails: z.array(participantEmailSchema).max(20).optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, 'Вкажіть хоча б одне поле для зміни');
+
+export const seriesParamsSchema = z.object({
+  seriesId: z.string().uuid(),
 });
 
 export const myBookingsQuerySchema = z.object({
@@ -25,4 +53,6 @@ export const myBookingsQuerySchema = z.object({
 });
 
 export type CreateBookingRequest = z.infer<typeof createBookingSchema>;
+export type UpdateBookingParticipantsRequest = z.infer<typeof updateBookingParticipantsSchema>;
+export type UpdateBookingRequest = z.infer<typeof updateBookingSchema>;
 export type MyBookingsQuery = z.infer<typeof myBookingsQuerySchema>;

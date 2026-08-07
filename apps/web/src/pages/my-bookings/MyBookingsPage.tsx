@@ -9,7 +9,11 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { Modal } from '../../components/ui/Modal';
 import { Spinner } from '../../components/ui/Spinner';
-import { useCancelBooking, useMyBookings } from '../../features/bookings/hooks/use-bookings';
+import {
+  useCancelBooking,
+  useCancelBookingSeries,
+  useMyBookings,
+} from '../../features/bookings/hooks/use-bookings';
 import type { Booking } from '../../features/bookings/types';
 import { getWeekStartKey } from '../../lib/dates';
 import { formatUserDateTime, formatUserTime, getUserTimezone } from '../../lib/timezone';
@@ -28,10 +32,16 @@ function timeLabel(booking: Booking) {
 function BookingRow({
   booking,
   onCancel,
+  onCancelSeries,
+  onRepeat,
+  canRepeat,
   onOpen,
 }: {
   booking: Booking;
   onCancel: () => void;
+  onCancelSeries: () => void;
+  onRepeat: () => void;
+  canRepeat: boolean;
   onOpen: () => void;
 }) {
   const date = new Date(booking.startAt);
@@ -51,16 +61,33 @@ function BookingRow({
             <i className="room-dot room-dot-blue" /> {booking.roomName} · поверх {booking.roomFloor}{' '}
             · до {booking.roomCapacity} людей
           </small>
+          {booking.series ? (
+            <small className="series-row-label">
+              Повтор {booking.series.occurrenceIndex} із {booking.series.occurrenceCount}
+            </small>
+          ) : null}
         </span>
       </button>
       <div className="my-booking-actions">
         <span className={`booking-status ${booking.cancelledAt ? 'booking-status-cancelled' : ''}`}>
           {booking.cancelledAt ? 'Скасовано' : 'Заплановано'}
         </span>
-        {!booking.cancelledAt ? (
-          <Button variant="ghost" onClick={onCancel}>
-            Скасувати
+        {canRepeat ? (
+          <Button variant="ghost" onClick={onRepeat}>
+            Повторити
           </Button>
+        ) : null}
+        {!booking.cancelledAt ? (
+          <>
+            <Button variant="ghost" onClick={onCancel}>
+              Скасувати
+            </Button>
+            {booking.series ? (
+              <Button variant="ghost" onClick={onCancelSeries}>
+                Усю серію
+              </Button>
+            ) : null}
+          </>
         ) : null}
       </div>
     </article>
@@ -72,6 +99,7 @@ export function MyBookingsPage() {
   const [type, setType] = useState<'upcoming' | 'past'>('upcoming');
   const bookings = useMyBookings(type);
   const cancelBooking = useCancelBooking();
+  const cancelBookingSeries = useCancelBookingSeries();
   const items = bookings.data?.pages.flatMap((page) => page.items) ?? [];
   const summaryMeta = bookings.data?.pages[0]?.meta.summary;
   const summary = useMemo(
@@ -83,6 +111,7 @@ export function MyBookingsPage() {
     [items, summaryMeta],
   );
   const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
+  const [seriesToCancel, setSeriesToCancel] = useState<Booking | null>(null);
 
   function openBooking(booking: Booking) {
     const params = new URLSearchParams({
@@ -93,8 +122,23 @@ export function MyBookingsPage() {
     navigate(`/schedule?${params.toString()}`);
   }
 
+  function repeatBooking(booking: Booking) {
+    const duration = differenceInMinutes(new Date(booking.endAt), new Date(booking.startAt));
+    const params = new URLSearchParams({
+      roomId: booking.roomId,
+      action: 'book',
+      repeatTitle: booking.title,
+      repeatDuration: String(duration),
+    });
+    navigate(`/schedule?${params.toString()}`);
+  }
+
   function cancel(booking: Booking) {
     setBookingToCancel(booking);
+  }
+
+  function cancelSeries(booking: Booking) {
+    setSeriesToCancel(booking);
   }
 
   function confirmCancel() {
@@ -162,6 +206,9 @@ export function MyBookingsPage() {
               booking={booking}
               onOpen={() => openBooking(booking)}
               onCancel={() => cancel(booking)}
+              onCancelSeries={() => cancelSeries(booking)}
+              onRepeat={() => repeatBooking(booking)}
+              canRepeat={type === 'past'}
             />
           ))}
         </div>
@@ -203,6 +250,35 @@ export function MyBookingsPage() {
                 onClick={confirmCancel}
               >
                 {cancelBooking.isPending ? 'Скасовуємо…' : 'Так, скасувати'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      ) : null}
+      {seriesToCancel?.series ? (
+        <Modal title="Скасувати всю серію?" onClose={() => setSeriesToCancel(null)}>
+          <div className="cancel-dialog">
+            <div className="cancel-dialog-icon">!</div>
+            <p>
+              Будуть скасовані всі майбутні активні повтори «{seriesToCancel.title}». Минулі
+              зустрічі залишаться в історії.
+            </p>
+            <div className="modal-actions">
+              <Button type="button" variant="ghost" onClick={() => setSeriesToCancel(null)}>
+                Не скасовувати
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                disabled={cancelBookingSeries.isPending}
+                onClick={() => {
+                  if (!seriesToCancel.series) return;
+                  cancelBookingSeries.mutate(seriesToCancel.series.id, {
+                    onSuccess: () => setSeriesToCancel(null),
+                  });
+                }}
+              >
+                {cancelBookingSeries.isPending ? 'Скасовуємо…' : 'Скасувати всю серію'}
               </Button>
             </div>
           </div>
