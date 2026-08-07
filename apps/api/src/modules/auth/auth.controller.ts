@@ -4,7 +4,7 @@ import { asyncController } from '../../shared/http/async-controller.js';
 import { sendSuccess } from '../../shared/http/api-response.js';
 import { getValidated } from '../../shared/middleware/validate-request.js';
 import { AuthService } from './auth.service.js';
-import type { LoginInput, RegisterInput } from './auth.schemas.js';
+import type { LoginInput, RegisterInput, VerifyEmailQuery } from './auth.schemas.js';
 
 const authService = new AuthService();
 
@@ -41,6 +41,16 @@ export async function login(req: Request, res: Response): Promise<void> {
   const user = await authService.login(body);
   await regenerateSession(req);
   req.session.userId = user.id;
+  sendSuccess(res, user);
+}
+
+export async function verifyEmail(req: Request, res: Response): Promise<void> {
+  const { query } = getValidated<{
+    body: unknown;
+    params: Record<string, unknown>;
+    query: VerifyEmailQuery;
+  }>(res);
+  const user = await authService.verifyEmail(query.token);
   sendSuccess(res, user);
 }
 

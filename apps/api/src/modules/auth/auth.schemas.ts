@@ -20,5 +20,10 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Введіть пароль'),
 });
 
+export const verifyEmailQuerySchema = z.object({
+  token: z.string().trim().min(64).max(128),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type VerifyEmailQuery = z.infer<typeof verifyEmailQuerySchema>;

@@ -96,8 +96,8 @@ async function main(): Promise<void> {
     createdUsers.push(
       await prisma.user.upsert({
         where: { email: user.email },
-        update: { name: user.name, passwordHash },
-        create: { ...user, passwordHash },
+        update: { name: user.name, passwordHash, emailVerifiedAt: new Date() },
+        create: { ...user, passwordHash, emailVerifiedAt: new Date() },
       }),
     );
   }

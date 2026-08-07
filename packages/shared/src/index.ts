@@ -4,10 +4,14 @@ export const ERROR_CODES = {
   UNAUTHORIZED: 'UNAUTHORIZED',
   FORBIDDEN: 'FORBIDDEN',
   EMAIL_ALREADY_EXISTS: 'EMAIL_ALREADY_EXISTS',
+  EMAIL_NOT_VERIFIED: 'EMAIL_NOT_VERIFIED',
+  EMAIL_VERIFICATION_INVALID: 'EMAIL_VERIFICATION_INVALID',
   ROOM_NOT_FOUND: 'ROOM_NOT_FOUND',
   BOOKING_NOT_FOUND: 'BOOKING_NOT_FOUND',
   BOOKING_CONFLICT: 'BOOKING_CONFLICT',
   BOOKING_IN_PAST: 'BOOKING_IN_PAST',
+  BOOKING_PARTICIPANTS_LOCKED: 'BOOKING_PARTICIPANTS_LOCKED',
+  BOOKING_SERIES_CONFLICT: 'BOOKING_SERIES_CONFLICT',
   OUTSIDE_WORKING_HOURS: 'OUTSIDE_WORKING_HOURS',
 } as const;
 
@@ -17,6 +21,7 @@ export interface ApiErrorPayload {
   code: ErrorCode | string;
   message: string;
   fields?: Record<string, string>;
+  details?: unknown;
 }
 
 export interface ApiSuccess<T> {
@@ -66,8 +71,25 @@ export interface BookingDto {
   userId: string;
   userName: string;
   participants: BookingParticipantDto[];
+  series: BookingSeriesDto | null;
   cancelledAt: string | null;
   createdAt: string;
+}
+
+export interface BookingSeriesDto {
+  id: string;
+  frequency: 'weekly';
+  occurrenceCount: number;
+  occurrenceIndex: number;
+  isException: boolean;
+  firstStartAt: string;
+  timezone: string;
+}
+
+export interface CreateBookingResultDto {
+  booking: BookingDto;
+  bookings: BookingDto[];
+  series: BookingSeriesDto | null;
 }
 
 export interface BookingParticipantDto {
@@ -87,4 +109,30 @@ export interface MyBookingsMetaDto {
   total: number;
   totalPages: number;
   summary: MyBookingsSummaryDto;
+}
+
+export type NotificationType =
+  | 'participant_added'
+  | 'participant_removed'
+  | 'booking_cancelled'
+  | 'booking_ending'
+  | 'series_participant_added'
+  | 'series_cancelled';
+
+export interface NotificationDto {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  bookingId: string | null;
+  seriesId: string | null;
+  roomId: string | null;
+  createdAt: string;
+  readAt: string | null;
+}
+
+export interface NotificationsMetaDto {
+  limit: number;
+  total: number;
+  unreadCount: number;
 }

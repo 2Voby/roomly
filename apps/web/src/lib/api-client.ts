@@ -6,6 +6,7 @@ export class ApiError extends Error {
     public readonly status: number,
     public readonly code: string,
     public readonly fields?: Record<string, string>,
+    public readonly details?: unknown,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -38,6 +39,7 @@ async function requestApi<T>(path: string, init: RequestInit = {}): Promise<ApiR
       response.status,
       error?.code ?? 'UNKNOWN_ERROR',
       error?.fields,
+      error?.details,
     );
   }
 

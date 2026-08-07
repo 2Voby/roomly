@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 
 import { useCurrentUser, useLogout } from '../features/auth/hooks/use-auth';
+import { useNotifications } from '../features/notifications/hooks/use-notifications';
 import { Button } from './ui/Button';
 
 export function AppShell() {
@@ -9,6 +10,8 @@ export function AppShell() {
   const logout = useLogout();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const notifications = useNotifications(1);
+  const unreadCount = notifications.data?.meta.unreadCount ?? 0;
 
   async function handleLogout() {
     await logout.mutateAsync();
@@ -50,9 +53,18 @@ export function AppShell() {
             <span className="office-status">
               <i /> Офіс відкритий
             </span>
-            <button className="notification-button" type="button" aria-label="Сповіщення">
-              ♢
-            </button>
+            <NavLink
+              className="notification-button"
+              to="/notifications"
+              aria-label={`Сповіщення${unreadCount > 0 ? `, непрочитаних: ${unreadCount}` : ''}`}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
+              </svg>
+              {unreadCount > 0 ? (
+                <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+              ) : null}
+            </NavLink>
             <div className="header-user">
               <span className="user-avatar workspace-avatar">
                 {user?.name?.slice(0, 1).toUpperCase()}
@@ -73,6 +85,12 @@ export function AppShell() {
           </div>
         </div>
       </header>
+      {user && !user.emailVerifiedAt ? (
+        <div className="email-verification-banner" role="status">
+          <strong>Підтвердіть email, щоб бронювати.</strong>
+          <span>У dev-режимі посилання підтвердження є в логах API/worker.</span>
+        </div>
+      ) : null}
       <main className="app-main">
         <Outlet />
       </main>

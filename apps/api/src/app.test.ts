@@ -34,6 +34,13 @@ describe('API error contracts', () => {
     expect(response.body.error.code).toBe('UNAUTHORIZED');
   });
 
+  it('protects notifications behind the session middleware', async () => {
+    const response = await request(app).get('/api/notifications');
+
+    expect(response.status).toBe(401);
+    expect(response.body.error.code).toBe('UNAUTHORIZED');
+  });
+
   it('returns a predictable not-found response for unknown API routes', async () => {
     const response = await request(app).get('/api/not-a-real-route');
 

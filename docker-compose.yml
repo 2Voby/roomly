@@ -13,6 +13,16 @@ services:
       timeout: 5s
       retries: 12
 
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - roomly-redis:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
   api:
     build:
       context: .
@@ -25,8 +35,12 @@ services:
       OFFICE_TIMEZONE: ${OFFICE_TIMEZONE:-Europe/Kyiv}
       WEB_ORIGIN: ${DOCKER_WEB_ORIGIN:-http://localhost:3000}
       NOTIFY_BEFORE_MINUTES: ${NOTIFY_BEFORE_MINUTES:-10}
+      REDIS_URL: redis://redis:6379
+      EMAIL_VERIFICATION_EXPIRES_HOURS: ${EMAIL_VERIFICATION_EXPIRES_HOURS:-24}
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     command:
       ['sh', '-c', 'npm run db:migrate && npm run db:seed && npm run start --workspace=apps/api']
@@ -39,6 +53,30 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://${POSTGRES_USER:-roomly}:${POSTGRES_PASSWORD:-roomly}@postgres:5432/${POSTGRES_DB:-roomly}?schema=public
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set in .env}
+      OFFICE_TIMEZONE: ${OFFICE_TIMEZONE:-Europe/Kyiv}
+      REDIS_URL: redis://redis:6379
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-no-reply@roomly.local}
+      EMAIL_WORKER_CONCURRENCY: ${EMAIL_WORKER_CONCURRENCY:-5}
+      EMAIL_VERIFICATION_EXPIRES_HOURS: ${EMAIL_VERIFICATION_EXPIRES_HOURS:-24}
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: ['node', 'apps/api/dist/worker.js']
+    restart: unless-stopped
 
   web:
     build:
@@ -55,3 +93,4 @@ services:
 
 volumes:
   roomly-postgres:
+  roomly-redis:

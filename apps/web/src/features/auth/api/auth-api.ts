@@ -7,5 +7,7 @@ export const authApi = {
     apiRequest<AuthUser>('/api/auth/login', { method: 'POST', body: JSON.stringify(input) }),
   register: (input: { name: string; email: string; password: string }) =>
     apiRequest<AuthUser>('/api/auth/register', { method: 'POST', body: JSON.stringify(input) }),
+  verifyEmail: (token: string) =>
+    apiRequest<AuthUser>(`/api/auth/verify-email?token=${encodeURIComponent(token)}`),
   logout: () => apiRequest<null>('/api/auth/logout', { method: 'POST' }),
 };

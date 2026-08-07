@@ -17,6 +17,9 @@ model User {
   updatedAt       DateTime  @updatedAt
   bookings        Booking[]
   bookingParticipants BookingParticipant[]
+  notifications   Notification[]
+  emailVerificationTokens EmailVerificationToken[]
+  bookingSeries   BookingSeries[]
 
   @@index([email])
   @@map("users")
@@ -32,6 +35,8 @@ model Room {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   bookings         Booking[]
+  bookingSeries    BookingSeries[]
+  notifications    Notification[]
 
   @@map("rooms")
 }
@@ -43,18 +48,47 @@ model Booking {
   endAt       DateTime  @db.Timestamptz(3)
   roomId      String    @db.Uuid
   userId      String    @db.Uuid
+  seriesId    String?   @db.Uuid
+  seriesIndex Int?
+  isException Boolean   @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   cancelledAt DateTime? @db.Timestamptz(3)
   room        Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  series      BookingSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
   participants BookingParticipant[]
+  notifications Notification[]
 
   @@index([roomId, startAt])
   @@index([userId, startAt])
   @@index([startAt])
   @@index([cancelledAt])
+  @@index([seriesId, startAt])
+  @@unique([seriesId, seriesIndex])
   @@map("bookings")
+}
+
+model BookingSeries {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @db.Uuid
+  roomId            String    @db.Uuid
+  frequency         String    @default("weekly")
+  occurrenceCount   Int
+  firstStartAt      DateTime  @db.Timestamptz(3)
+  durationMinutes   Int
+  timezone          String    @default("Europe/Kyiv")
+  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime  @updatedAt @db.Timestamptz(3)
+  cancelledAt       DateTime? @db.Timestamptz(3)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room              Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  bookings          Booking[]
+  notifications     Notification[]
+
+  @@index([userId, createdAt])
+  @@index([roomId, firstStartAt])
+  @@map("booking_series")
 }
 
 model BookingParticipant {
@@ -76,4 +110,39 @@ model Session {
 
   @@index([expire])
   @@map("session")
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime  @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  usedAt    DateTime? @db.Timestamptz(3)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("email_verification_tokens")
+}
+
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  bookingId String?   @db.Uuid
+  seriesId  String?   @db.Uuid
+  roomId    String?   @db.Uuid
+  type      String
+  title     String
+  message   String
+  dedupeKey String?   @unique
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  readAt    DateTime? @db.Timestamptz(3)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  booking   Booking?  @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  series    BookingSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  room      Room?     @relation(fields: [roomId], references: [id], onDelete: SetNull)
+
+  @@index([userId, readAt, createdAt])
+  @@index([userId, createdAt])
+  @@map("notifications")
 }

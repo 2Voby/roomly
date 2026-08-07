@@ -7,10 +7,11 @@ import type { RequestHandler } from 'express';
 import { env } from './config/env.js';
 import { sessionMiddleware } from './config/session.js';
 import { authRouter } from './modules/auth/auth.routes.js';
-import { bookingsRouter } from './modules/bookings/bookings.routes.js';
+import { bookingSeriesRouter, bookingsRouter } from './modules/bookings/bookings.routes.js';
 import { healthRouter } from './modules/health/health.routes.js';
 import { roomsRouter } from './modules/rooms/rooms.routes.js';
 import { usersRouter } from './modules/users/users.routes.js';
+import { notificationsRouter } from './modules/notifications/notifications.routes.js';
 import { errorHandler } from './shared/middleware/error-handler.js';
 import { notFound } from './shared/middleware/not-found.js';
 
@@ -31,6 +32,8 @@ app.use('/api/auth', authRouter);
 app.use('/api/rooms', roomsRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/bookings', bookingsRouter);
+app.use('/api/booking-series', bookingSeriesRouter);
+app.use('/api/notifications', notificationsRouter);
 
 app.use(notFound);
 app.use(errorHandler);
