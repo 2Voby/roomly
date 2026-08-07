@@ -67,13 +67,14 @@ shared/              errors, middleware, response, UTC/timezone utilities
 modules/auth/        register, login, logout, me
 modules/users/       user repository/service
 modules/rooms/       кімнати та room schedule
-modules/bookings/    створення, конфлікти, скасування, my bookings
+modules/bookings/    створення, конфлікти, скасування, my bookings, recurring series
+modules/notifications notifications, BullMQ email queue, SMTP/dev fallback, reminders
 modules/health/      GET /api/health
 ```
 
 Controller працює тільки з HTTP, service містить бізнес-правила, repository — Prisma queries. HTTP-помилки проходять через централізований error handler.
 
-Відповіді мають формат `{ data, meta }`, а помилки — `{ error: { code, message, fields } }`. Реалізовані коди: `VALIDATION_ERROR`, `UNAUTHORIZED`, `FORBIDDEN`, `EMAIL_ALREADY_EXISTS`, `ROOM_NOT_FOUND`, `BOOKING_NOT_FOUND`, `BOOKING_CONFLICT`, `BOOKING_IN_PAST`, `OUTSIDE_WORKING_HOURS`.
+Відповіді мають формат `{ data, meta }`, а помилки — `{ error: { code, message, fields, details } }`. Реалізовані коди включають `VALIDATION_ERROR`, `UNAUTHORIZED`, `FORBIDDEN`, `EMAIL_ALREADY_EXISTS`, `EMAIL_NOT_VERIFIED`, `EMAIL_VERIFICATION_INVALID`, `ROOM_NOT_FOUND`, `BOOKING_NOT_FOUND`, `BOOKING_CONFLICT`, `BOOKING_SERIES_CONFLICT`, `BOOKING_IN_PAST` та `OUTSIDE_WORKING_HOURS`.
 
 ## Архітектура frontend
 
@@ -104,15 +105,21 @@ GET  /api/rooms
 GET  /api/rooms/availability?at=ISO_DATETIME
 GET  /api/rooms/:roomId/bookings?weekStart=YYYY-MM-DD
 POST /api/bookings
+PATCH /api/bookings/:bookingId
 DELETE /api/bookings/:bookingId
+DELETE /api/booking-series/:seriesId
+PATCH /api/bookings/:bookingId/participants
 GET  /api/bookings/my?type=upcoming|past&page=1&limit=20
+GET  /api/users?email=...
+GET  /api/notifications?limit=50
+POST /api/notifications/read
 ```
 
 Auth — cookie-based session. Cookie `httpOnly`, `secure` у production, `sameSite=lax`; сесія зберігається у PostgreSQL таблиці `session` через `connect-pg-simple`.
 
 ## Час і конфлікти
 
-Всі `Booking.startAt/endAt` зберігаються як UTC timestamps. Користувацький інтерфейс показує розклад у `Europe/Kyiv`; якщо timezone браузера інший, він показується біля розкладу.
+Всі `Booking.startAt/endAt` зберігаються як UTC timestamps. Сервер перевіряє робочі години у timezone офісу `Europe/Kyiv`, а календарні labels, картки, форми, деталі та availability-конвертуються у timezone браузера. Якщо timezone браузера інший, UI показує це біля розкладу.
 
 Робочий час зберігається на кожній кімнаті в полях `workStartMinutes` і `workEndMinutes`. Seed задає для нових кімнат `09:00–19:00`, а повторний seed не перезаписує ручні зміни цих полів. Змінити час без адмінки можна напряму в PostgreSQL, наприклад:
 
@@ -176,7 +183,7 @@ Unit-тести перевіряють overlap rules, а Supertest переві�
 
 Основний інтерфейс Roomly виконаний українською мовою у єдиній SaaS-системі: компактний top header із навігацією, responsive application shell, split-screen auth, кольорові картки переговорних, тижневий CSS Grid-календар, toast feedback, summary cards на сторінці «Мої бронювання» та окремий огляд переговорних з фільтром місткості.
 
-У модальному створенні бронювання доступні ручні поля початку/кінця з кроком 30 хвилин, швидкі тривалості від 30 хвилин до 4 годин, локальна перевірка перетинів та пошук зареєстрованих учасників за email. Сервер повторює всі перевірки, а учасники зберігаються в `booking_participants`.
+У модальному створенні бронювання доступні ручні поля початку/кінця з кроком 30 хвилин, швидкі тривалості від 30 хвилин до 4 годин, локальна перевірка перетинів та пошук зареєстрованих учасників за email. Сервер повторює всі перевірки, а учасники зберігаються в `booking_participants`. З минулої зустрічі можна зробити «Повторити» з попередньо заповненими кімнатою, назвою й тривалістю; у деталях є копіювання короткої інформації зустрічі.
 
 Додатковий endpoint для пошуку учасників: `GET /api/users?email=...`.
 
@@ -188,6 +195,22 @@ Unit-тести перевіряють overlap rules, а Supertest переві�
 - Посилання з «Моїх бронювань» відкриває правильну кімнату, тиждень і деталі бронювання.
 - Додані unit/Supertest-перевірки capacity, availability та API error contracts.
 
+## Сповіщення та email worker
+
+- Нові акаунти отримують одноразове посилання підтвердження email; до підтвердження створення бронювання заблоковане на backend і frontend.
+- `GET /api/auth/verify-email?token=...` підтверджує email; у dev без SMTP посилання виводиться в лог API, а worker логгує повний email fallback.
+- `GET /api/notifications?limit=50` повертає повідомлення поточного користувача та unread count.
+- `POST /api/notifications/read` позначає показані повідомлення прочитаними.
+- `PATCH /api/bookings/:bookingId/participants` дозволяє власнику змінювати учасників до початку зустрічі.
+- Повторювані бронювання створюються щотижнево одним атомарним запитом: `recurrence: { type: "weekly", occurrences: 2..52 }`. Якщо хоча б один слот конфліктує, серія не створюється.
+- Кожне повторення є окремим бронюванням: його можна скасувати або відредагувати (без зміни дати); майбутні активні повторення можна скасувати всією серією через `DELETE /api/booking-series/:seriesId`.
+- Учасники серії отримують одне зведене in-app/email повідомлення про додавання або скасування серії.
+- In-app події створюються для додавання/видалення учасника, скасування зустрічі та завершення бронювання перед наступним слотом.
+- Email-відправки йдуть через BullMQ queue `roomly-email`, Redis і окремий Docker-сервіс `worker`; API не чекає SMTP-відправки.
+- `NOTIFY_BEFORE_MINUTES` задає час reminder-а перед завершенням бронювання.
+- `EMAIL_VERIFICATION_EXPIRES_HOURS` задає строк дії посилання підтвердження, за замовчуванням 24 години.
+- SMTP налаштовується через `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD` і `SMTP_FROM`.
+
 ## Bonus / ще не реалізовано
 
-Не входять до цього етапу: SMTP/email notifications, password reset, admin management UI, Google Calendar integration, recurring bookings, background worker/cron, OpenAPI/Swagger UI та browser push notifications. `NOTIFY_BEFORE_MINUTES` уже є в env для майбутнього notification worker.
+Не входять до цього етапу: password reset, admin management UI, Google Calendar integration, OpenAPI/Swagger UI та browser push notifications.
